@@ -1,19 +1,12 @@
-import { Router } from "express";
-import passport from "passport";
-import { authSuccess, authFail, logout } from "../controllers/auth.controller";
+import express from 'express';
+import { googleLogin, googleCallback } from '../controllers/auth.controller';
 
-const router = Router();
+const router = express.Router();
 
-// Google OAuth
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-router.get("/google/callback", passport.authenticate("google", { failureRedirect: "/auth/fail" }), authSuccess);
+// Route for Google login
+router.get('/google', googleLogin);
 
-// Facebook OAuth
-router.get("/facebook", passport.authenticate("facebook"));
-router.get("/facebook/callback", passport.authenticate("facebook", { failureRedirect: "/auth/fail" }), authSuccess);
-
-// Logout
-router.get("/logout", logout);
-router.get("/fail", authFail);
+// Google callback route
+router.get('/google/callback', googleCallback);
 
 export default router;

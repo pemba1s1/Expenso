@@ -1,15 +1,42 @@
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
+import passport from 'passport';
+import { generateAccessToken, generateRefreshToken } from '../config/jwt';
+import { logger } from '../utils/logger';
+import { User } from '@prisma/client';
 
-export const authSuccess = (req: Request, res: Response) => {
-  res.json({ user: req.user });
-};
+// Google login route
+export const googleLogin = passport.authenticate('google', {
+  scope: ['profile', 'email'],
+});
 
-export const authFail = (req: Request, res: Response) => {
-  res.status(401).json({ message: "Authentication failed" });
-};
+// Google callback route
+export const googleCallback = (req: Request, res: Response) => {
+  const user = req.user as User;
+  if (!user) {
+    logger.warn('Google login failed');
+    res.status(401).send('Authentication failed');
+    return;
+  }
 
-export const logout = (req: Request, res: Response) => {
-  req.logout(() => {
-    res.json({ message: "Logged out" });
+  // Generate JWT tokens
+  const accessToken = generateAccessToken(user);
+  const refreshToken = generateRefreshToken(user);
+  
+  // Set the refresh token as an HttpOnly cookie
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,  // Use `false` for local dev or HTTP (use `true` for production with HTTPS)
+    sameSite: "strict",
+  });
+
+  // Send the JWT tokens back to the client
+  res.json({
+    accessToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+    },
   });
 };

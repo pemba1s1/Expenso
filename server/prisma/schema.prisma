@@ -8,10 +8,9 @@ datasource db {
 }
 
 model User {
-  id        String  @id @default(uuid())
-  googleId  String? @unique
-  facebookId String? @unique
-  email     String  @unique
+  id        String   @id @default(uuid())
+  googleId  String   @unique
+  email     String   @unique
   name      String?
   picture   String?
   createdAt DateTime @default(now())
