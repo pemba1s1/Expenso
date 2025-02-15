@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,31 +13,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  // Handle hash changes
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.slice(1)
-      if (hash === "signup") {
-        setIsLogin(false)
-      } else {
-        setIsLogin(true)
-      }
-    }
-
-    // initial state based on hash
-    handleHashChange()
-
-    // listener for hash changes
-    window.addEventListener('hashchange', handleHashChange)
-
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange)
-    }
-  }, [])
-
   const handleTabChange = (value: string) => {
-    const hash = value === "login" ? "login" : "signup"
-    window.location.hash = hash
     setIsLogin(value === "login")
   }
 
@@ -126,9 +102,9 @@ export default function AuthPage() {
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
             {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <Button 
-              variant="link" 
-              className="p-0" 
+            <Button
+              variant="link"
+              className="p-0"
               onClick={() => handleTabChange(isLogin ? "signup" : "login")}
             >
               {isLogin ? "Sign up" : "Login"}

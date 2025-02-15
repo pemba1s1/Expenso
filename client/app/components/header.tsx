@@ -20,14 +20,14 @@ export default function Header() {
                     </Link>
                 </nav>
                 <div className="flex items-center space-x-4">
-                    <Link href="/enter#login">
+                    {/* <Link href="/enter#login">
                         <Button variant="ghost">
                             Log In
                         </Button>
-                    </Link>
-                    <Link href="/enter#signup">
+                    </Link> */}
+                    <Link href="/enter">
                         <Button>
-                            Sign Up
+                            Get Started
                         </Button>
                     </Link>
                 </div>
