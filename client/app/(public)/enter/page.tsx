@@ -24,13 +24,12 @@ export default function AuthPage() {
       }
     }
 
-    // Set initial state based on hash
+    // initial state based on hash
     handleHashChange()
 
-    // Add event listener for hash changes
+    // listener for hash changes
     window.addEventListener('hashchange', handleHashChange)
 
-    // Cleanup event listener on unmount
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
     }
@@ -44,7 +43,6 @@ export default function AuthPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically handle the login or signup logic
     console.log(isLogin ? "Logging in" : "Signing up", { email, password })
   }
 
