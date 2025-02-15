@@ -2,11 +2,11 @@
   "name": "expenso-server",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "src/server.ts",
   "scripts": {
-    "start": "node dist/index.js",
-    "dev": "nodemon src/server.ts",
-    "build": "npx tsc",
+    "start": "bun src/server.ts",
+    "dev": "bun --watch src/server.ts",
+    "build": "bun build src/server.ts --outdir dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
