@@ -9,6 +9,7 @@ import invitationRoutes from "./routes/invitation.routes";
 
 import './config/passport';  // Initialize passport strategy
 import { logger } from './utils/logger';
+import prisma from './config/prismaClient';
 
 const app = express();
 
@@ -33,6 +34,12 @@ app.use("/invitation", invitationRoutes);
 app.use((err: any, req: any, res: any, next: any) => {
   logger.error(`Error: ${err.message}`);
   res.status(500).send('Internal Server Error');
+});
+
+// Gracefully shut down Prisma Client
+process.on('SIGINT', async () => {
+  await prisma.$disconnect();
+  process.exit(0);
 });
 
 export default app;

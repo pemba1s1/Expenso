@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prismaClient';
 import { sendInviteEmail } from '../utils/email';
-
-const prisma = new PrismaClient();
 
 export const inviteUser = async (email: string, adminId: string, groupId: string) => {
   // Check if the user has the admin role

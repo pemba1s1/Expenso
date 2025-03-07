@@ -1,11 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '../config/prismaClient';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcrypt';
 import { sendVerificationEmail } from '../utils/email';
-import jwt from 'jsonwebtoken';
 import { generateAccessToken, verifyAccessToken } from '../config/jwt';
 
-const prisma = new PrismaClient();
 
 export const findOrCreateUser = async (profile: any) => {
   try {
