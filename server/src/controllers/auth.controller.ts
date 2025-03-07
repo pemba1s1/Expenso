@@ -3,6 +3,7 @@ import passport from 'passport';
 import { generateAccessToken, generateRefreshToken } from '../config/jwt';
 import { logger } from '../utils/logger';
 import { User } from '@prisma/client';
+import { registerUser, loginUser, verifyUser } from '../services/user.service';
 
 // Google login route
 export const googleLogin = passport.authenticate('google', {
@@ -39,4 +40,39 @@ export const googleCallback = (req: Request, res: Response) => {
       picture: user.picture,
     },
   });
+};
+
+export const registerUserController = async (req: Request, res: Response) => {
+  const { email, password, name } = req.body;
+
+  try {
+    const user = await registerUser(email, password, name);
+    res.status(201).json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Something went wrong!" });
+  }
+};
+
+export const loginUserController = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+
+  try {
+    const { accessToken, user } = await loginUser(email, password);
+    res.status(200).json({ accessToken, user });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(401).json({ error: errorMessage });
+  }
+};
+
+export const verifyUserController = async (req: Request, res: Response) => {
+  const { token } = req.params;
+
+  try {
+    const user = await verifyUser(token);
+    res.status(200).json(user);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(400).json({ error: errorMessage });
+  }
 };

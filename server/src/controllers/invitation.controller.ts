@@ -9,7 +9,7 @@ export const inviteUserController = async (req: Request, res: Response) => {
     const invitation = await inviteUser(email, adminId, groupId);
     res.status(201).json(invitation);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: (error as Error).message });
   }
 };
 

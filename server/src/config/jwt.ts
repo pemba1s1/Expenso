@@ -1,8 +1,9 @@
 import jwt from "jsonwebtoken";
 import { config } from "./env";
+import ms from "ms";
 
-export const generateAccessToken = (user: any) => {
-  return jwt.sign({ id: user.id, email: user.email }, config.JWT_SECRET, { expiresIn: config.JWT_ACCESS_EXPIRATION });
+export const generateAccessToken = (user: any, expiresIn: ms.StringValue = config.JWT_ACCESS_EXPIRATION) => {
+  return jwt.sign({ id: user.id, email: user.email }, config.JWT_SECRET, { expiresIn });
 };
 
 export const generateRefreshToken = (user: any) => {

@@ -9,11 +9,12 @@ datasource db {
 
 model User {
   id          String       @id @default(uuid())
-  googleId    String       @unique
+  googleId    String?      @unique
   email       String       @unique
-  password    String
+  password    String?
   name        String?
   picture     String?
+  verified    Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   userGroups  UserGroup[]

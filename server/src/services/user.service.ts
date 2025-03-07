@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import { logger } from '../utils/logger';
+import bcrypt from 'bcrypt';
+import { sendVerificationEmail } from '../utils/email';
+import jwt from 'jsonwebtoken';
+import { generateAccessToken, verifyAccessToken } from '../config/jwt';
 
 const prisma = new PrismaClient();
 
@@ -28,4 +32,52 @@ export const findOrCreateUser = async (profile: any) => {
     logger.error('Error while finding/creating user', error);
     throw error;
   }
+};
+
+export const registerUser = async (email: string, password: string, name?: string) => {
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const user = await prisma.user.create({
+    data: {
+      email,
+      password: hashedPassword,
+      name,
+    },
+  });
+
+  const verificationToken = generateAccessToken(user, '1h');
+  const verificationLink = `http://yourapp.com/verify/${verificationToken}`;
+  await sendVerificationEmail(email, verificationLink);
+
+  return user;
+};
+
+export const loginUser = async (email: string, password: string) => {
+  const user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (!user || !user.password) {
+    throw new Error('Invalid email or password');
+  }
+
+  if (!user.verified) {
+    throw new Error('Account not verified');
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error('Invalid email or password');
+  }
+
+  const accessToken = generateAccessToken(user);
+  return { accessToken, user };
+};
+
+export const verifyUser = async (token: string) => {
+  const decoded = verifyAccessToken(token) as { userId: string };
+  const user = await prisma.user.update({
+    where: { id: decoded.userId },
+    data: { verified: true },
+  });
+  return user;
 };

@@ -28,7 +28,7 @@ app.use(csrf({ cookie: true }));
 app.use(passport.initialize());
 app.use("/auth", authRoutes);
 app.use("/group", groupRoutes);
-app.use("invitation", invitationRoutes);
+app.use("/invitation", invitationRoutes);
 
 app.use((err: any, req: any, res: any, next: any) => {
   logger.error(`Error: ${err.message}`);
