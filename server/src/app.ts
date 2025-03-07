@@ -4,6 +4,9 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import csrf from "csurf";
 import authRoutes from "./routes/auth.routes";
+import groupRoutes from "./routes/group.routes";
+import invitationRoutes from "./routes/invitation.routes";
+
 import './config/passport';  // Initialize passport strategy
 import { logger } from './utils/logger';
 
@@ -24,6 +27,8 @@ app.use(csrf({ cookie: true }));
 
 app.use(passport.initialize());
 app.use("/auth", authRoutes);
+app.use("/group", groupRoutes);
+app.use("invitation", invitationRoutes);
 
 app.use((err: any, req: any, res: any, next: any) => {
   logger.error(`Error: ${err.message}`);

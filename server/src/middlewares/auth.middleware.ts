@@ -5,12 +5,15 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).json({ message: "Access denied" });
+  if (!token) {
+    res.status(401).json({ message: "Access denied" });
+    return;
+  }
 
   try {
     req.user = verifyAccessToken(token);
     next();
   } catch (error) {
-    return res.status(403).json({ message: "Invalid token" });
+    res.status(403).json({ message: "Invalid token" });
   }
 };
