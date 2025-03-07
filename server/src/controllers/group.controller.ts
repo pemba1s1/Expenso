@@ -1,23 +1,21 @@
 import { Request, Response } from 'express';
 import { createGroup } from '../services/group.service';
+import { User } from '@prisma/client';
 
 export const createGroupController = async (req: Request, res: Response) => {
   const { name } = req.body;
-  const adminId = req.user?.id;
+  const user: User = req.user as User;
 
-  if (!adminId) {
+  if (!user.id) {
     res.status(400).json({ error: 'User ID is missing' });
     return;
   }
 
   try {
-    const group = await createGroup(name, adminId);
+    const group = await createGroup(name, user.id);
     res.status(201).json(group);
   } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: 'An unknown error occurred' });
-    }
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
   }
 };
