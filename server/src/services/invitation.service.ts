@@ -4,6 +4,18 @@ import { sendInviteEmail } from '../utils/email';
 const prisma = new PrismaClient();
 
 export const inviteUser = async (email: string, adminId: string, groupId: string) => {
+  // Check if the user has the admin role
+  const userGroup = await prisma.userGroup.findFirst({
+    where: {
+      userId: adminId,
+      groupId: groupId,
+      role: 'admin',
+    },
+  });
+
+  if (!userGroup) {
+    throw new Error('Only admins can invite users to the group');
+  }
   const invitation = await prisma.invitation.create({
     data: {
       email,
