@@ -8,20 +8,24 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(uuid())
-  googleId   String      @unique
-  email      String      @unique
-  name       String?
-  picture    String?
-  createdAt  DateTime    @default(now())
-  userGroups UserGroup[]
+  id          String       @id @default(uuid())
+  googleId    String       @unique
+  email       String       @unique
+  name        String?
+  picture     String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  userGroups  UserGroup[]
+  invitations Invitation[] @relation("adminInvitations")
 }
 
 model Group {
-  id         String      @id @default(uuid())
-  name       String
-  createdAt  DateTime    @default(now())
-  userGroups UserGroup[]
+  id          String       @id @default(uuid())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  userGroups  UserGroup[]
+  invitations Invitation[]
 }
 
 model UserGroup {
@@ -32,4 +36,18 @@ model UserGroup {
   group   Group  @relation(fields: [groupId], references: [id])
 
   @@id([userId, groupId])
+}
+
+model Invitation {
+  id        String   @id @default(uuid())
+  email     String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  adminId   String
+  groupId   String
+  admin     User     @relation("adminInvitations", fields: [adminId], references: [id])
+  group     Group    @relation(fields: [groupId], references: [id])
+
+  @@unique([email, groupId])
 }
