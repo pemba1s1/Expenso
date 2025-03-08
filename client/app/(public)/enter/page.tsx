@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import Link from 'next/link'
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
@@ -64,9 +66,11 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Login
-                </Button>
+                <Link href="/dashboard">
+                  <Button type="submit" className="w-full">
+                    Login
+                  </Button>
+                </Link>
               </form>
             </TabsContent>
             <TabsContent value="signup">

@@ -1,0 +1,24 @@
+/* Dashboard layout styles */
+
+/* Add padding to the bottom of the main content when on mobile to account for the tab bar */
+@media (max-width: 768px) {
+  .dashboard-content {
+    padding-bottom: 5rem; /* Ensure content doesn't get hidden behind the mobile tab bar */
+  }
+  
+  /* Safe area padding for devices with notches or home indicators */
+  .pb-safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* Ensure the mobile tab bar stays at the bottom */
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 50;
+  background-color: hsl(var(--background));
+  border-top: 1px solid hsl(var(--border));
+}

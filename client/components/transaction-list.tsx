@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label"
 const transactions = [
   {
     id: 1,
-    date: "2023-04-15",
+    date: "2025-04-15",
     description: "Grocery Store",
     category: "Groceries",
     amount: 78.35,
@@ -22,7 +22,7 @@ const transactions = [
   },
   {
     id: 2,
-    date: "2023-04-14",
+    date: "2025-04-14",
     description: "Monthly Rent",
     category: "Rent",
     amount: 1200.0,
@@ -30,7 +30,7 @@ const transactions = [
   },
   {
     id: 3,
-    date: "2023-04-13",
+    date: "2025-04-13",
     description: "Electric Bill",
     category: "Utilities",
     amount: 95.4,
@@ -38,7 +38,7 @@ const transactions = [
   },
   {
     id: 4,
-    date: "2023-04-10",
+    date: "2025-04-10",
     description: "Movie Tickets",
     category: "Entertainment",
     amount: 32.5,
@@ -46,7 +46,7 @@ const transactions = [
   },
   {
     id: 5,
-    date: "2023-04-08",
+    date: "2025-04-08",
     description: "Gas Station",
     category: "Transportation",
     amount: 45.75,
@@ -54,7 +54,7 @@ const transactions = [
   },
   {
     id: 6,
-    date: "2023-04-05",
+    date: "2025-04-05",
     description: "Internet Bill",
     category: "Utilities",
     amount: 79.99,
@@ -62,7 +62,7 @@ const transactions = [
   },
   {
     id: 7,
-    date: "2023-04-03",
+    date: "2025-04-03",
     description: "Restaurant Dinner",
     category: "Entertainment",
     amount: 68.2,
@@ -70,7 +70,7 @@ const transactions = [
   },
   {
     id: 8,
-    date: "2023-04-01",
+    date: "2025-04-01",
     description: "Savings Transfer",
     category: "Savings",
     amount: 400.0,
