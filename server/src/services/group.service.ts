@@ -16,20 +16,11 @@ export const createGroup = async (name: string, adminId: string) => {
 };
 
 export const getUserGroups = async (userId: string) => {
-  const groups = await prisma.group.findMany({
-    where: {
-      userGroups: {
-        some: {
-          userId,
-        },
-      },
-    },
-    include: {
-      userGroups: true,
-      invitations: true,
-    },
+  const userGroups = await prisma.userGroup.findMany({
+    where: { userId },
+    include: { group: true },
   });
-  return groups;
+  return userGroups.map(userGroup => userGroup.group);
 };
 
 export const getGroupById = async (groupId: string) => {
@@ -39,4 +30,12 @@ export const getGroupById = async (groupId: string) => {
     },
   });
   return group;
-}
+};
+
+export const getGroupUsers = async (groupId: string) => {
+  const users = await prisma.userGroup.findMany({
+    where: { groupId },
+    include: { user: true },
+  });
+  return users.map(userGroup => userGroup.user);
+};

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createGroupController, getGroupByIdController, getUserGroupsController } from '../controllers/group.controller';
+import { createGroupController, getGroupByIdController, getUserGroupsController, getGroupUsersController } from '../controllers/group.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -7,5 +7,6 @@ const router = express.Router();
 router.post('/create', authenticateToken, createGroupController);
 router.get('/all', authenticateToken, getUserGroupsController);
 router.get('/:id', authenticateToken, getGroupByIdController);
+router.get('/:id/users', authenticateToken, getGroupUsersController);
 
 export default router;

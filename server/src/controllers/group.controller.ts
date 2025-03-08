@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createGroup, getGroupById, getUserGroups } from '../services/group.service';
+import { createGroup, getGroupById, getUserGroups, getGroupUsers } from '../services/group.service';
 import { User } from '@prisma/client';
 
 export const createGroupController = async (req: Request, res: Response) => {
@@ -49,6 +49,18 @@ export const getUserGroupsController = async (req: Request, res: Response) => {
   try {
     const groups = await getUserGroups(user.id);
     res.status(200).json(groups);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
+  }
+};
+
+export const getGroupUsersController = async (req: Request, res: Response) => {
+  const groupId = req.params.id;
+
+  try {
+    const users = await getGroupUsers(groupId);
+    res.status(200).json(users);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ error: errorMessage });
