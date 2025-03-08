@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import bcrypt from 'bcrypt';
 import { sendVerificationEmail } from '../utils/email';
 import { generateAccessToken, verifyAccessToken } from '../config/jwt';
+import { User } from '@prisma/client';
 
 
 export const findOrCreateUser = async (profile: any) => {
@@ -99,4 +100,20 @@ export const verifyUser = async (token: string) => {
     where: { id: decoded.id },
     data: { verified: true },
   });
+};
+
+/**
+ * Get a user by their ID
+ * @param userId The user's ID
+ * @returns The user object or null if not found
+ */
+export const getUserById = async (userId: string): Promise<User | null> => {
+  try {
+    return await prisma.user.findUnique({
+      where: { id: userId },
+    });
+  } catch (error) {
+    logger.error(`Error fetching user with ID ${userId}:`, error);
+    throw error;
+  }
 };

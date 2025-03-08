@@ -1,59 +1,60 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import axiosInstance from "@/lib/axiosInstance"
-
-import Link from 'next/link'
+import { useLogin, useRegister } from "@/hooks/use-auth"
+import { useSearchParams } from "next/navigation"
 
 export default function AuthPage() {
-  const [isLogin, setIsLogin] = useState(true)
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  
+  const [activeTab, setActiveTab] = useState(tabParam === 'signup' ? 'signup' : 'login')
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
 
+  // React Query hooks
+  const login = useLogin()
+  const register = useRegister()
+
+  // Update tab when URL param changes
+  useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam === 'signup' ? 'signup' : 'login')
+    }
+  }, [tabParam])
+
   const handleTabChange = (value: string) => {
-    setIsLogin(value === "login")
+    setActiveTab(value)
   }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    axiosInstance.post("/auth/login", { email, password })
-      .then((res) => {
-        localStorage.setItem("token", res.data.accessToken)
-      })
-      .catch((err) => {
-        console.error(err)
-      })
+    login.mutate({ email, password })
   }
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault()
-    axiosInstance.post("/auth/register", { name, email, password })
-      .then((res) => {
-        console.log(res.data)
-      })
-      .catch((err) => {
-        console.error(err)
-      })
+    register.mutate({ name, email, password })
   }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">{isLogin ? "Login" : "Sign Up"}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">{activeTab === 'login' ? "Login" : "Sign Up"}</CardTitle>
           <CardDescription className="text-center">
-            {isLogin ? "Enter your credentials to access your account" : "Create an account to get started"}
+            {activeTab === 'login' ? "Enter your credentials to access your account" : "Create an account to get started"}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={isLogin ? "login" : "signup"} className="w-full" onValueChange={handleTabChange}>
+          <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">
                 Login
@@ -86,11 +87,18 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Link href="/dashboard">
-                  <Button type="submit" className="w-full">
-                    Login
-                  </Button>
-                </Link>
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  disabled={login.isPending}
+                >
+                  {login.isPending ? "Logging in..." : "Login"}
+                </Button>
+                {login.isError && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Login failed. Please check your credentials.
+                  </p>
+                )}
               </form>
             </TabsContent>
             <TabsContent value="signup">
@@ -128,22 +136,31 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Sign Up
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={register.isPending}
+                >
+                  {register.isPending ? "Signing up..." : "Sign Up"}
                 </Button>
+                {register.isError && (
+                  <p className="text-sm text-red-500 mt-2">
+                    Registration failed. Please try again.
+                  </p>
+                )}
               </form>
             </TabsContent>
           </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {activeTab === 'login' ? "Don't have an account? " : "Already have an account? "}
             <Button
               variant="link"
               className="p-0"
-              onClick={() => handleTabChange(isLogin ? "signup" : "login")}
+              onClick={() => handleTabChange(activeTab === 'login' ? "signup" : "login")}
             >
-              {isLogin ? "Sign up" : "Login"}
+              {activeTab === 'login' ? "Sign up" : "Login"}
             </Button>
           </p>
         </CardFooter>

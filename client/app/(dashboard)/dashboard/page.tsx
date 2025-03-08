@@ -5,6 +5,8 @@ import { BarChart, CreditCard, DollarSign, Download, Home, Plus, Settings, Uploa
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useDashboard } from "../layout"
+import { useAuthContext } from "@/app/providers"
+import { LogoutButton } from "@/components/logout-button"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -31,6 +33,7 @@ export default function DashboardPage() {
   const { activeSection, setActiveSection } = useDashboard()
   const [showExpenseForm, setShowExpenseForm] = useState(false)
   const isMobile = useIsMobile()
+  const { user } = useAuthContext()
 
   return (
     <>
@@ -97,10 +100,17 @@ export default function DashboardPage() {
                     <SelectItem value="april">April 2025</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                  <User className="h-5 w-5" />
-                  <span className="sr-only">User account</span>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" className="rounded-full">
+                    <User className="h-5 w-5" />
+                    <span className="sr-only">User account</span>
+                  </Button>
+                  {user && (
+                    <span className="text-sm font-medium hidden md:inline-block">
+                      {user.name || user.email}
+                    </span>
+                  )}
+                </div>
               </div>
             </header>
             <main className="grid flex-1 items-start gap-4 p-4 md:gap-8 md:p-6">
@@ -261,15 +271,48 @@ export default function DashboardPage() {
               )}
 
               {activeSection === "settings" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Settings</CardTitle>
-                    <CardDescription>Manage your account settings and preferences</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <SettingsForm />
-                  </CardContent>
-                </Card>
+                <div className="grid gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Settings</CardTitle>
+                      <CardDescription>Manage your account settings and preferences</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SettingsForm />
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Account</CardTitle>
+                      <CardDescription>Manage your account information</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="text-sm font-medium">Profile Information</h3>
+                          <div className="mt-2 grid gap-2">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm text-muted-foreground">Name</p>
+                                <p className="text-sm font-medium">{user?.name || 'Not provided'}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-muted-foreground">Email</p>
+                                <p className="text-sm font-medium">{user?.email}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="pt-4 border-t">
+                          <h3 className="text-sm font-medium mb-4">Account Actions</h3>
+                          <LogoutButton />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </main>
           </div>
