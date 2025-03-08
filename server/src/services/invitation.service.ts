@@ -59,7 +59,7 @@ export const acceptInvitation = async (invitationId: string, password?: string) 
       throw new Error('Password is required for new users');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(password, 10);
     user = await prisma.user.create({
       data: {
         email: invitation.email,
