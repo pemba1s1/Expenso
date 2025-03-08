@@ -19,11 +19,38 @@ export function MobileNav({
   className,
 }: MobileNavProps) {
   const isMobile = useIsMobile()
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  const handleCameraClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // Here you would handle the file, e.g., upload it to your server
+      console.log("File selected:", file)
+      
+      // TODO: File handeling logic goes here
+      // 1. Show a preview of the image
+      // 2. Upload it to server
+      // 3. Process it for receipt data extraction
+    }
+  }
 
   if (!isMobile) return null
 
   return (
     <div className={cn("fixed bottom-0 left-0 right-0 border-t bg-background", className)}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
       <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
         <TabsList className="grid grid-cols-5 w-full h-16 rounded-none bg-background relative">
           <TabsTrigger value="dashboard" className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none">
@@ -34,7 +61,7 @@ export function MobileNav({
             <CreditCard className="h-5 w-5" />
             <span className="text-xs">Expenses</span>
           </TabsTrigger>
-          <TabsTrigger value="camera" className="flex flex-col items-center justify-center relative -top-4">
+          <TabsTrigger value="camera" className="flex flex-col items-center justify-center relative -top-4" onClick={handleCameraClick}>
             <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
               <Camera className="h-7 w-7 text-primary-foreground" />
             </div>
