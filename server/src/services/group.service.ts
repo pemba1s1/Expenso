@@ -20,14 +20,13 @@ export const getUserGroups = async (userId: string) => {
     where: { userId },
     include: { group: true },
   });
-  return userGroups.map(userGroup => userGroup.group);
+  return userGroups;
 };
 
-export const getGroupById = async (groupId: string) => {
-  const group = await prisma.group.findUnique({
-    where: {
-      id: groupId,
-    },
+export const getGroupById = async (groupId: string, userId: string) => {
+  const group = await prisma.userGroup.findFirst({
+    where: { groupId, userId },
+    include: { group: true },
   });
   return group;
 };

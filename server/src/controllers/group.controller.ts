@@ -30,7 +30,7 @@ export const getGroupByIdController = async (req: Request, res: Response) => {
   }
 
   try {
-    const group = await getGroupById(groupId);
+    const group = await getGroupById(groupId, user.id);
     res.status(200).json(group);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
