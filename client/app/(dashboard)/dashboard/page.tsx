@@ -77,8 +77,8 @@ export default function DashboardPage() {
               </SidebarContent>
             </Sidebar>
           )}
-          <div className="flex-1 overflow-auto dashboard-content">
-            <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
+          <div className="flex-1 overflow-auto dashboard-content flex flex-col items-center">
+            <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6 w-full">
               <SidebarTrigger />
               <div className="flex-1">
                 <h1 className="text-lg font-semibold">
@@ -113,7 +113,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             </header>
-            <main className="grid flex-1 items-start gap-4 p-4 md:gap-8 md:p-6">
+            <main className="grid flex-1 items-start gap-4 p-4 md:gap-8 md:p-6 w-full max-w-7xl mx-auto">
               {activeSection === "dashboard" && (
                 <>
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -269,7 +269,7 @@ export default function DashboardPage() {
                   </Card>
                 </div>
               )}
-
+              
               {activeSection === "settings" && (
                 <div className="grid gap-4">
                   <Card>
