@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import axiosInstance from "@/lib/axiosInstance"
 
+import Link from 'next/link'
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
@@ -84,9 +86,11 @@ export default function AuthPage() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full">
-                  Login
-                </Button>
+                <Link href="/dashboard">
+                  <Button type="submit" className="w-full">
+                    Login
+                  </Button>
+                </Link>
               </form>
             </TabsContent>
             <TabsContent value="signup">

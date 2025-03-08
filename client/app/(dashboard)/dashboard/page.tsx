@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { BarChart, CreditCard, DollarSign, Download, Home, Plus, Settings, Upload, User } from "lucide-react"
 
+import { useIsMobile } from "@/hooks/use-mobile"
+import { useDashboard } from "../layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -26,50 +28,53 @@ import { TopExpenses } from "@/components/top-expense"
 import { SettingsForm } from "@/components/settings-form"
 
 export default function DashboardPage() {
-  const [activeSection, setActiveSection] = useState("dashboard")
+  const { activeSection, setActiveSection } = useDashboard()
   const [showExpenseForm, setShowExpenseForm] = useState(false)
+  const isMobile = useIsMobile()
 
   return (
     <>
       <SidebarProvider>
         <div className="flex min-h-screen bg-muted/40">
-          <Sidebar>
-            <SidebarContent>
-              <div className="flex h-14 items-center border-b px-4">
-                <span className="font-semibold">Expenso</span>
-              </div>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={activeSection === "dashboard"}
-                    onClick={() => setActiveSection("dashboard")}
-                  >
-                    <Home className="h-4 w-4" />
-                    <span>Dashboard</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton isActive={activeSection === "expenses"} onClick={() => setActiveSection("expenses")}>
-                    <CreditCard className="h-4 w-4" />
-                    <span>Expenses</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton isActive={activeSection === "insights"} onClick={() => setActiveSection("insights")}>
-                    <BarChart className="h-4 w-4" />
-                    <span>Insights</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton isActive={activeSection === "settings"} onClick={() => setActiveSection("settings")}>
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarContent>
-          </Sidebar>
-          <div className="flex-1 overflow-auto">
+          {!isMobile && (
+            <Sidebar>
+              <SidebarContent>
+                <div className="flex h-14 items-center border-b px-4">
+                  <span className="font-semibold">Expenso</span>
+                </div>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      isActive={activeSection === "dashboard"}
+                      onClick={() => setActiveSection("dashboard")}
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={activeSection === "expenses"} onClick={() => setActiveSection("expenses")}>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Expenses</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={activeSection === "insights"} onClick={() => setActiveSection("insights")}>
+                      <BarChart className="h-4 w-4" />
+                      <span>Insights</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton isActive={activeSection === "settings"} onClick={() => setActiveSection("settings")}>
+                      <Settings className="h-4 w-4" />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarContent>
+            </Sidebar>
+          )}
+          <div className="flex-1 overflow-auto dashboard-content">
             <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6">
               <SidebarTrigger />
               <div className="flex-1">
@@ -86,10 +91,10 @@ export default function DashboardPage() {
                     <SelectValue placeholder="Select period" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="january">January 2023</SelectItem>
-                    <SelectItem value="february">February 2023</SelectItem>
-                    <SelectItem value="march">March 2023</SelectItem>
-                    <SelectItem value="april">April 2023</SelectItem>
+                    <SelectItem value="january">January 2025</SelectItem>
+                    <SelectItem value="february">February 2025</SelectItem>
+                    <SelectItem value="march">March 2025</SelectItem>
+                    <SelectItem value="april">April 2025</SelectItem>
                   </SelectContent>
                 </Select>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -119,7 +124,7 @@ export default function DashboardPage() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">$3,200.00</div>
-                        <p className="text-xs text-muted-foreground">For April 2023</p>
+                        <p className="text-xs text-muted-foreground">For April 2025</p>
                       </CardContent>
                     </Card>
                     <Card>
@@ -301,4 +306,3 @@ export default function DashboardPage() {
     </>
   )
 }
-
