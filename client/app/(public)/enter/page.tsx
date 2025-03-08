@@ -7,19 +7,38 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import axiosInstance from "@/lib/axiosInstance"
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [name, setName] = useState("")
 
   const handleTabChange = (value: string) => {
     setIsLogin(value === "login")
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log(isLogin ? "Logging in" : "Signing up", { email, password })
+    axiosInstance.post("/auth/login", { email, password })
+      .then((res) => {
+        localStorage.setItem("token", res.data.accessToken)
+      })
+      .catch((err) => {
+        console.error(err)
+      })
+  }
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault()
+    axiosInstance.post("/auth/register", { name, email, password })
+      .then((res) => {
+        console.log(res.data)
+      })
+      .catch((err) => {
+        console.error(err)
+      })
   }
 
   return (
@@ -42,7 +61,7 @@ export default function AuthPage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="login">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
@@ -60,6 +79,7 @@ export default function AuthPage() {
                     id="password"
                     type="password"
                     value={password}
+                    placeholder="***********"
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
@@ -70,7 +90,18 @@ export default function AuthPage() {
               </form>
             </TabsContent>
             <TabsContent value="signup">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">Name</Label>
+                  <Input
+                    id="name"
+                    type="name"
+                    placeholder="First Last"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
                   <Input
@@ -88,6 +119,7 @@ export default function AuthPage() {
                     id="signup-password"
                     type="password"
                     value={password}
+                    placeholder="***********"
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
