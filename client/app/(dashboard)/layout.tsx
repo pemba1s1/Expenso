@@ -5,6 +5,7 @@ import type React from "react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { MobileNav } from "@/components/ui/mobile-nav"
+import { ProtectedRoute } from "@/components/protected-route"
 import "./dashboard.css"
 
 // Create a context to share the active section state
@@ -33,18 +34,20 @@ export default function DashboardLayout({
   const isMobile = useIsMobile()
 
   return (
-    <DashboardContext.Provider value={{ activeSection, setActiveSection }}>
-      <div className="dashboard-layout">
-        {children}
-        {isMobile && (
-          <MobileNav 
-            activeSection={activeSection} 
-            setActiveSection={setActiveSection}
-            className="pb-safe-area-bottom"
-          />
-        )}
-        {isMobile && <div className="h-16 pb-safe-area-bottom" />}
-      </div>
-    </DashboardContext.Provider>
+    <ProtectedRoute>
+      <DashboardContext.Provider value={{ activeSection, setActiveSection }}>
+        <div className="dashboard-layout">
+          {children}
+          {isMobile && (
+            <MobileNav 
+              activeSection={activeSection} 
+              setActiveSection={setActiveSection}
+              className="pb-safe-area-bottom"
+            />
+          )}
+          {isMobile && <div className="h-16 pb-safe-area-bottom" />}
+        </div>
+      </DashboardContext.Provider>
+    </ProtectedRoute>
   )
 }

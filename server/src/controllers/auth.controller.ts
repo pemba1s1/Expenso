@@ -3,7 +3,7 @@ import passport from 'passport';
 import { generateAccessToken, generateRefreshToken } from '../config/jwt';
 import { logger } from '../utils/logger';
 import { User } from '@prisma/client';
-import { registerUser, loginUser, verifyUser } from '../services/user.service';
+import { registerUser, loginUser, verifyUser, getUserById } from '../services/user.service';
 
 // Google login route
 export const googleLogin = passport.authenticate('google', {
@@ -74,5 +74,33 @@ export const verifyUserController = async (req: Request, res: Response) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(400).json({ error: errorMessage });
+  }
+};
+
+export const getCurrentUserController = async (req: Request, res: Response) => {
+  try {
+    // req.user is set by the authenticateToken middleware
+    const userId = (req.user as any)?.id;
+    
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    
+    const user = await getUserById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Return user data without sensitive information
+    res.status(200).json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
   }
 };
