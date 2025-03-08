@@ -24,7 +24,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(csrf({ cookie: true }));
+// app.use(csrf({ cookie: true }));
 
 app.use(passport.initialize());
 app.use("/auth", authRoutes);

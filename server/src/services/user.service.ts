@@ -20,6 +20,7 @@ export const findOrCreateUser = async (profile: any) => {
           email: profile.emails[0].value,
           name: profile.displayName,
           picture: profile.photos ? profile.photos[0].value : null,
+          verified: true,
         },
       });
       logger.info(`New user created: ${profile.emails[0].value}`);
@@ -42,9 +43,12 @@ export const registerUser = async (email: string, password: string, name?: strin
     },
   });
 
+  logger.info(`New user created: ${user.email}`);
+
   const verificationToken = generateAccessToken(user, '1h');
-  const verificationLink = `http://yourapp.com/verify/${verificationToken}`;
-  await sendVerificationEmail(email, verificationLink);
+  const verificationLink = `http://localhost:5000/auth/verify/${verificationToken}`;
+  logger.info(`Verification link: ${verificationLink}`);
+  // await sendVerificationEmail(email, verificationLink);
 
   return user;
 };
@@ -72,10 +76,23 @@ export const loginUser = async (email: string, password: string) => {
 };
 
 export const verifyUser = async (token: string) => {
-  const decoded = verifyAccessToken(token) as { userId: string };
-  const user = await prisma.user.update({
-    where: { id: decoded.userId },
+  const decoded = verifyAccessToken(token) as { id: string, email: string, verified: boolean };
+
+  if (!decoded) {
+    throw new Error('Invalid token');
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { id: decoded.id }
+  });
+
+  if (user?.verified) {
+    throw new Error('Account already verified');
+  }
+
+  logger.info(`Decoded token: ${JSON.stringify(decoded)}`);
+  return await prisma.user.update({
+    where: { id: decoded.id },
     data: { verified: true },
   });
-  return user;
 };
