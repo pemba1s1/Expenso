@@ -54,21 +54,26 @@ export const registerUser = async (email: string, password: string, name?: strin
 };
 
 export const loginUser = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user || !user.password) {
+  let user;
+  try {
+    user = await prisma.user.findUnique({
+      where: { email },
+    });
+  } catch (error) {
     throw new Error('Invalid email or password');
   }
 
-  if (!user.verified) {
-    throw new Error('Account not verified');
+  if (!user || !user.password || !password) {
+    throw new Error('Invalid email or password');
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!isPasswordValid) {
     throw new Error('Invalid email or password');
+  }
+  
+  if (!user.verified) {
+    throw new Error('Account not verified');
   }
 
   const accessToken = generateAccessToken(user);
@@ -90,7 +95,6 @@ export const verifyUser = async (token: string) => {
     throw new Error('Account already verified');
   }
 
-  logger.info(`Decoded token: ${JSON.stringify(decoded)}`);
   return await prisma.user.update({
     where: { id: decoded.id },
     data: { verified: true },
