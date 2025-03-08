@@ -3,6 +3,7 @@ import passport from "passport";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import csrf from "csurf";
+import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import groupRoutes from "./routes/group.routes";
 import invitationRoutes from "./routes/invitation.routes";
@@ -25,6 +26,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 // app.use(csrf({ cookie: true }));
+
+// Configure CORS
+app.use(cors({
+  origin: process.env.CLIENT_URL, // Allow requests from this origin
+  credentials: true, // Allow cookies to be sent with requests
+}));
 
 app.use(passport.initialize());
 app.use("/auth", authRoutes);
