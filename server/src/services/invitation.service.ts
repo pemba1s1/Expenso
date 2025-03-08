@@ -1,5 +1,7 @@
 import prisma from '../config/prismaClient';
 import { sendInviteEmail } from '../utils/email';
+import { logger } from '../utils/logger';
+import bcrypt from 'bcrypt';
 
 export const inviteUser = async (email: string, adminId: string, groupId: string) => {
   // Check if the user has the admin role
@@ -22,13 +24,23 @@ export const inviteUser = async (email: string, adminId: string, groupId: string
     },
   });
 
-  const inviteLink = `http://yourapp.com/invite/${invitation.id}`;
-  await sendInviteEmail(email, inviteLink);
+  let user = await prisma.user.findUnique({
+    where: { email: invitation.email },
+  });
+
+  let inviteLink;
+
+  if (user) inviteLink = `http://localhost:5000/invitation/accept/${invitation.id}`;
+  else inviteLink = `http://localhost:5000/invitation/accept/${invitation.id}?password=true`;  
+  
+  logger.info(`Invitation link: ${inviteLink}`);
+  
+  // await sendInviteEmail(email, inviteLink);
 
   return invitation;
 };
 
-export const acceptInvitation = async (invitationId: string, password: string) => {
+export const acceptInvitation = async (invitationId: string, password?: string) => {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: { group: true },
@@ -43,10 +55,16 @@ export const acceptInvitation = async (invitationId: string, password: string) =
   });
 
   if (!user) {
+    if (!password) {
+      throw new Error('Password is required for new users');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
     user = await prisma.user.create({
       data: {
         email: invitation.email,
-        password,
+        password: hashedPassword,
+        verified: true,
       },
     });
   }
