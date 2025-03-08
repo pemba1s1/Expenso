@@ -83,13 +83,15 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
     const userId = (req.user as any)?.id;
     
     if (!userId) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: 'User not authenticated' });
+      return
     }
     
     const user = await getUserById(userId);
     
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      res.status(404).json({ error: 'User not found' });
+      return
     }
     
     // Return user data without sensitive information
