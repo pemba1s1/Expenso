@@ -59,8 +59,8 @@ export function useRegister() {
       return response.data
     },
     onSuccess: () => {
-      // Redirect to login after successful registration
-      router.push('/enter?tab=login')
+      // Redirect to email verification page after successful registration
+      router.push('/verify-email')
     },
     onError: (error) => {
       console.error('Registration failed:', error)
