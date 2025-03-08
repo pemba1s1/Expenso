@@ -1,6 +1,6 @@
 import prisma from '../config/prismaClient';
 import { logger } from '../utils/logger';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 import { sendVerificationEmail } from '../utils/email';
 import { generateAccessToken, verifyAccessToken } from '../config/jwt';
 import { User } from '@prisma/client';
@@ -35,7 +35,7 @@ export const findOrCreateUser = async (profile: any) => {
 };
 
 export const registerUser = async (email: string, password: string, name?: string) => {
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcryptjs.hash(password, 10);
   const user = await prisma.user.create({
     data: {
       email,
@@ -68,7 +68,7 @@ export const loginUser = async (email: string, password: string) => {
     throw new Error('Invalid email or password');
   }
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+  const isPasswordValid = await bcryptjs.compare(password, user.password);
   if (!isPasswordValid) {
     throw new Error('Invalid email or password');
   }

@@ -1,7 +1,7 @@
 import prisma from '../config/prismaClient';
 import { sendInviteEmail } from '../utils/email';
 import { logger } from '../utils/logger';
-import bcrypt from 'bcrypt';
+import bcryptjs from 'bcryptjs';
 
 export const inviteUser = async (email: string, adminId: string, groupId: string) => {
   // Check if the user has the admin role
