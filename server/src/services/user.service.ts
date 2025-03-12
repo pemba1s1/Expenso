@@ -1,10 +1,11 @@
 import prisma from '../config/prismaClient';
 import { logger } from '../utils/logger';
 import bcryptjs from 'bcryptjs';
-import { sendVerificationEmail } from '../utils/email';
+import { sendVerificationEmail } from './email.service';
 import { generateAccessToken, verifyAccessToken } from '../config/jwt';
 import { User } from '@prisma/client';
-
+import { config } from '../config/env';
+import crypto from 'crypto';
 
 export const findOrCreateUser = async (profile: any) => {
   try {
@@ -35,78 +36,92 @@ export const findOrCreateUser = async (profile: any) => {
 };
 
 export const registerUser = async (email: string, password: string, name?: string) => {
-  const hashedPassword = await bcryptjs.hash(password, 10);
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: hashedPassword,
-      name,
-    },
-  });
+  try {
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    const verificationCode = crypto.randomBytes(4).toString('hex');
+    
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        verificationToken: verificationCode,
+        verificationTokenExpiry: new Date(Date.now() + 3600000), // 1 hour expiry
+      },
+    });
 
-  logger.info(`New user created: ${user.email}`);
+    logger.info(`New user created: ${user.email}`);
 
-  const verificationToken = generateAccessToken(user, '1h');
-  const verificationLink = `http://localhost:5000/auth/verify/${verificationToken}`;
-  logger.info(`Verification link: ${verificationLink}`);
-  // await sendVerificationEmail(email, verificationLink);
-
-  return user;
+    const verificationLink = `${config.CLIENT_URL}/auth/verify?token=${verificationCode}`;
+    logger.info(`Verification link: ${verificationLink}`);
+    await sendVerificationEmail(email, verificationLink);
+    return user;
+  } catch (error) {
+    logger.error('Error while registering user', error);
+    throw error;
+  }
 };
 
 export const loginUser = async (email: string, password: string) => {
-  let user;
   try {
-    user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
     });
+
+    if (!user || !user.password || !password) {
+      throw new Error('Invalid email or password');
+    }
+
+    const isPasswordValid = await bcryptjs.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new Error('Invalid email or password');
+    }
+
+    if (!user.verified) {
+      throw new Error('Account not verified');
+    }
+
+    const accessToken = generateAccessToken(user);
+    return { accessToken, user };
   } catch (error) {
-    throw new Error('Invalid email or password');
+    logger.error('Error while logging in user', error);
+    throw error;
   }
-
-  if (!user || !user.password || !password) {
-    throw new Error('Invalid email or password');
-  }
-
-  const isPasswordValid = await bcryptjs.compare(password, user.password);
-  if (!isPasswordValid) {
-    throw new Error('Invalid email or password');
-  }
-  
-  if (!user.verified) {
-    throw new Error('Account not verified');
-  }
-
-  const accessToken = generateAccessToken(user);
-  return { accessToken, user };
 };
 
 export const verifyUser = async (token: string) => {
-  const decoded = verifyAccessToken(token) as { id: string, email: string, verified: boolean };
+  try {
+    const user = await prisma.user.findFirst({
+      where: { 
+        verificationToken: token,
+        verificationTokenExpiry: {
+          gt: new Date()
+        }
+      }
+    });
 
-  if (!decoded) {
-    throw new Error('Invalid token');
+    if (!user) {
+      throw new Error('Invalid or expired token');
+    }
+
+    if (user.verified) {
+      throw new Error('Account already verified');
+    }
+
+    return await prisma.user.update({
+      where: { id: user.id },
+      data: { 
+        verified: true,
+        verificationToken: null,
+        verificationTokenExpiry: null
+      },
+    });
+  } catch (error) {
+    logger.error('Error while verifying user', error);
+    throw error;
   }
-
-  const user = await prisma.user.findFirst({
-    where: { id: decoded.id }
-  });
-
-  if (user?.verified) {
-    throw new Error('Account already verified');
-  }
-
-  return await prisma.user.update({
-    where: { id: decoded.id },
-    data: { verified: true },
-  });
 };
 
-/**
- * Get a user by their ID
- * @param userId The user's ID
- * @returns The user object or null if not found
- */
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
     return await prisma.user.findUnique({
@@ -114,6 +129,17 @@ export const getUserById = async (userId: string): Promise<User | null> => {
     });
   } catch (error) {
     logger.error(`Error fetching user with ID ${userId}:`, error);
+    throw error;
+  }
+};
+
+export const getUserByEmail = async (email: string) => {
+  try {
+    return await prisma.user.findUnique({
+      where: { email },
+    });
+  } catch (error) {
+    logger.error(`Error fetching user with email ${email}:`, error);
     throw error;
   }
 };

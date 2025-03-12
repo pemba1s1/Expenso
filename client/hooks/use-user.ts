@@ -16,12 +16,15 @@ export function useUser() {
         return response.data
       } catch (error) {
         // If the request fails, clear the token
-        localStorage.removeItem('token')
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token')
+        }
         throw error
       }
     },
     // Only fetch if we have a token but no user data
-    enabled: !user && !!localStorage.getItem('token'),
+    // Check if window is defined before accessing localStorage (to avoid SSR issues)
+    enabled: !user && typeof window !== 'undefined' && !!localStorage.getItem('token'),
     retry: false, // Don't retry on failure
   })
 
@@ -31,7 +34,7 @@ export function useUser() {
   }
 
   // If the request fails, clear the token
-  if (query.isError) {
+  if (query.isError && typeof window !== 'undefined') {
     localStorage.removeItem('token')
   }
 
