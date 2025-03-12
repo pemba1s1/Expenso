@@ -13,15 +13,14 @@ import { useSearchParams } from "next/navigation"
 export default function AuthPage() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
-  
   const [activeTab, setActiveTab] = useState(tabParam === 'signup' ? 'signup' : 'login')
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
 
-  // React Query hooks
-  const login = useLogin()
-  const register = useRegister()
+  // React Query mutations
+  const loginMutation = useLogin()
+  const registerMutation = useRegister()
 
   // Update tab when URL param changes
   useEffect(() => {
@@ -36,12 +35,12 @@ export default function AuthPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    login.mutate({ email, password })
+    loginMutation.mutate({ email, password })
   }
 
   const handleRegister = (e: React.FormEvent) => {
     e.preventDefault()
-    register.mutate({ name, email, password })
+    registerMutation.mutate({ name, email, password })
   }
 
   return (
@@ -90,14 +89,16 @@ export default function AuthPage() {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={login.isPending}
+                  disabled={loginMutation.isPending}
                 >
-                  {login.isPending ? "Logging in..." : "Login"}
+                  {loginMutation.isPending ? "Logging in..." : "Login"}
                 </Button>
-                {login.isError && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Login failed. Please check your credentials.
-                  </p>
+                {loginMutation.error && (
+                  <div className="p-3 rounded-md bg-red-50 border border-red-200 mt-2">
+                    <p className="text-sm text-red-600">
+                      {loginMutation.error}
+                    </p>
+                  </div>
                 )}
               </form>
             </TabsContent>
@@ -139,14 +140,16 @@ export default function AuthPage() {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={register.isPending}
+                  disabled={registerMutation.isPending}
                 >
-                  {register.isPending ? "Signing up..." : "Sign Up"}
+                  {registerMutation.isPending ? "Signing up..." : "Sign Up"}
                 </Button>
-                {register.isError && (
-                  <p className="text-sm text-red-500 mt-2">
-                    Registration failed. Please try again.
-                  </p>
+                {registerMutation.error && (
+                  <div className="p-3 rounded-md bg-red-50 border border-red-200 mt-2">
+                    <p className="text-sm text-red-600">
+                      {registerMutation.error}
+                    </p>
+                  </div>
                 )}
               </form>
             </TabsContent>

@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  googleId    String?      @unique
-  email       String       @unique
-  password    String?
-  name        String?
-  picture     String?
-  verified    Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  userGroups  UserGroup[]
-  invitations Invitation[] @relation("adminInvitations")
+  id                     String       @id @default(uuid())
+  googleId               String?      @unique
+  email                  String       @unique
+  password               String?
+  name                   String?
+  picture                String?
+  verified               Boolean      @default(false)
+  verificationToken      String?
+  verificationTokenExpiry DateTime?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  userGroups             UserGroup[]
+  invitations            Invitation[] @relation("adminInvitations")
 }
 
 model Group {

@@ -12,7 +12,9 @@ router.get('/google/callback', googleCallback);
 
 router.post('/register', registerUserController);
 router.post('/login', loginUserController);
+// Support both formats: /verify/:token (old) and /verify?token=xxx (new)
 router.get('/verify/:token', verifyUserController);
+router.get('/verify', verifyUserController);
 
 // Protected route to get the current user's data
 router.get('/me', authenticateToken, getCurrentUserController);

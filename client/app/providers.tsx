@@ -21,7 +21,7 @@ type AuthContextType = {
 // Create the auth context
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  setUser: () => {},
+  setUser: () => { },
   isLoading: true,
 })
 
@@ -29,7 +29,6 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuthContext = () => useContext(AuthContext)
 
 export function Providers({ children }: { children: ReactNode }) {
-  // Create a client
   const [queryClient] = useState(() => new QueryClient())
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
