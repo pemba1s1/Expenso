@@ -55,8 +55,9 @@ export const registerUserController = async (req: Request, res: Response) => {
     res.status(201).json(user);
   } catch (error) {
     logger.error(error);
-    console.log(error)
-    res.status(500).json({ error: "Something went wrong!" });
+    const errorMessage = error instanceof Error ? error.message : "Something went wrong!";
+    if (errorMessage.includes("Invalid email") || errorMessage.includes("Password must be at least 8")) res.status(400).json({ error: errorMessage });
+    res.status(500).json({ error: "Something went wrong" });
   }
 };
 
@@ -68,8 +69,9 @@ export const loginUserController = async (req: Request, res: Response) => {
     res.status(200).json({ accessToken, user });
   } catch (error) {
     logger.error(error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    res.status(401).json({ error: errorMessage });
+    const errorMessage = error instanceof Error ? error.message : "Something went wrong!";
+    if (errorMessage.includes("Invalid email") || errorMessage.includes("Password is required")) res.status(400).json({ error: errorMessage });
+    res.status(401).json({ error: "Something went wrong!" });
   }
 };
 
