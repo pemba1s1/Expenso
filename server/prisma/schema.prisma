@@ -21,6 +21,7 @@ model User {
   updatedAt               DateTime     @updatedAt
   userGroups              UserGroup[]
   invitations             Invitation[] @relation("adminInvitations")
+  Expense                 Expense[]
 }
 
 model Group {
@@ -30,6 +31,7 @@ model Group {
   updatedAt   DateTime     @updatedAt
   userGroups  UserGroup[]
   invitations Invitation[]
+  Expense     Expense[]
 }
 
 model UserGroup {
@@ -54,4 +56,18 @@ model Invitation {
   group     Group    @relation(fields: [groupId], references: [id])
 
   @@unique([email, groupId])
+}
+
+model Expense {
+  id           String   @id @default(uuid())
+  userId       String
+  groupId      String?
+  amount       Float
+  receiptImage String
+  details      Json
+  status       String?  @default("pending")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id])
+  group        Group?   @relation(fields: [groupId], references: [id])
 }
