@@ -19,3 +19,16 @@ export const createExpense = async ({ userId, groupId, amount, receiptImage, det
     throw new Error('Failed to create expense');
   }
 };
+
+export const approveExpense = async (expenseId: string, adminId: string) => {
+  try {
+    const expense = await prisma.expense.update({
+      where: { id: expenseId },
+      data: { status: 'approved', approvedBy: adminId },
+    });
+
+    return expense;
+  } catch (error) {
+    throw new Error('Failed to approve expense');
+  }
+};

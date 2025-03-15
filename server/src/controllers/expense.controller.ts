@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { createExpense } from '../services/expense.service';
+import { createExpense, approveExpense } from '../services/expense.service';
 import { processReceiptImage } from '../utils/receipt';
 import { User } from '@prisma/client';
 
@@ -30,3 +30,17 @@ export const addExpenseController = async (req: Request, res: Response) => {
     res.status(500).json({ error: errorMessage });
   }
 };
+
+export const approveExpenseController = async (req: Request, res: Response) => {
+  const { expenseId } = req.body;
+  const user: User = req.user as User;
+
+  try {
+    const expense = await approveExpense(expenseId, user.id);
+    res.status(200).json(expense);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
+  }
+};
+
