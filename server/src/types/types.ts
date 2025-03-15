@@ -13,6 +13,6 @@ export interface ExpenseItems {
 
 export interface ExpenseCategory {
   name: string;
-  totalAmount: number;
+  amount: number;
   items: Array<ExpenseItems>;
 }

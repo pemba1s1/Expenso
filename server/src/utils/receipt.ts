@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import { CreateExpenseInput, ExpenseCategory } from '../types/types';
+import { CreateExpenseInput, ExpenseCategory, ExpenseItems } from '../types/types';
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 
@@ -34,7 +34,16 @@ export const processReceiptImage = async (imageBuffer: Buffer): Promise<{amount:
     // });
 
     const amount = 123; // Get the amount from the LLM response
-    const details : Array<ExpenseCategory> = []; // Get the details from the LLM response
+    const items : Array<ExpenseItems> = [
+      { name: 'Food', amount: 50 },
+      { name: 'Transport', amount: 20 },
+      { name: 'Misc', amount: 53 },
+    ]
+    const details : Array<ExpenseCategory> = [
+      { name: 'Food', amount: 50, items },
+      { name: 'Transport', amount: 20, items },
+      { name: 'Misc', amount: 53, items },
+    ]; // Get the details from the LLM response
 
     return {amount, receiptImageUrl, details}; // Return the S3 URL
   } catch (error) {
