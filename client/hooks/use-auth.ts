@@ -23,6 +23,16 @@ const getErrorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : 'An unexpected error occurred'
 }
 
+const isEmailValid = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+const isPasswordValid = (password: string): boolean => {
+  const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.*[A-Z])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+  return passwordRegex.test(password);
+};
+
 type LoginCredentials = {
   email: string
   password: string
@@ -46,6 +56,12 @@ export function useLogin() {
 
   const mutation = useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
+      if (!isEmailValid(credentials.email)) {
+        throw new Error('Invalid email format');
+      }
+      if (!credentials.password) {
+        throw new Error('Password is required');
+      }
       const response = await axiosInstance.post<AuthResponse>('/auth/login', credentials)
       return response.data
     },
@@ -81,6 +97,12 @@ export function useRegister() {
 
   const mutation = useMutation({
     mutationFn: async (credentials: RegisterCredentials) => {
+      if (!isEmailValid(credentials.email)) {
+        throw new Error('Invalid email format');
+      }
+      if (!isPasswordValid(credentials.password)) {
+        throw new Error('Password must be at least 8 characters long, contain at least one number, one special character and one uppercase letter');
+      }
       const response = await axiosInstance.post<User>('/auth/register', credentials)
       return response.data
     },

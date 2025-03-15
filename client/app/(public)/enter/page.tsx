@@ -17,6 +17,8 @@ export default function AuthPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordError, setPasswordError] = useState("")
 
   // React Query mutations
   const loginMutation = useLogin()
@@ -30,18 +32,46 @@ export default function AuthPage() {
   }, [tabParam])
 
   const handleTabChange = (value: string) => {
+    setEmail("")
+    setPassword("")
+    setName("")
+    setConfirmPassword("")
+    setPasswordError("")
     setActiveTab(value)
   }
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault()
-    loginMutation.mutate({ email, password })
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value)
+    if (confirmPassword == "") return;
+    if (confirmPassword && e.target.value !== confirmPassword) {
+      setPasswordError("Passwords do not match")
+    } else {
+      setPasswordError("")
+    }
   }
 
-  const handleRegister = (e: React.FormEvent) => {
-    e.preventDefault()
-    registerMutation.mutate({ name, email, password })
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConfirmPassword(e.target.value)
+    if (password && e.target.value !== password) {
+      setPasswordError("Passwords do not match")
+    } else {
+      setPasswordError("")
+    }
   }
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    loginMutation.mutate({ email, password });
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match")
+      return;
+    }
+    registerMutation.mutate({ name, email, password });
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -133,7 +163,18 @@ export default function AuthPage() {
                     type="password"
                     value={password}
                     placeholder="***********"
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    placeholder="***********"
+                    onChange={handleConfirmPasswordChange}
                     required
                   />
                 </div>
@@ -144,10 +185,10 @@ export default function AuthPage() {
                 >
                   {registerMutation.isPending ? "Signing up..." : "Sign Up"}
                 </Button>
-                {registerMutation.error && (
+                {(passwordError || registerMutation.error) && (
                   <div className="p-3 rounded-md bg-red-50 border border-red-200 mt-2">
                     <p className="text-sm text-red-600">
-                      {registerMutation.error}
+                      {passwordError || registerMutation.error}
                     </p>
                   </div>
                 )}

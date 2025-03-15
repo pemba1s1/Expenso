@@ -6,6 +6,7 @@ import { generateAccessToken, verifyAccessToken } from '../config/jwt';
 import { User } from '@prisma/client';
 import { config } from '../config/env';
 import crypto from 'crypto';
+import { isEmailValid, isPasswordValid } from '../utils/validation';
 
 export const findOrCreateUser = async (profile: any) => {
   try {
@@ -37,6 +38,12 @@ export const findOrCreateUser = async (profile: any) => {
 
 export const registerUser = async (email: string, password: string, name?: string) => {
   try {
+    if (!isEmailValid(email)) {
+      throw new Error('Invalid email format');
+    }
+    if (!isPasswordValid(password)) {
+      throw new Error('Password must be at least 8 characters long and contain at least one number and one special character');
+    }
     const hashedPassword = await bcryptjs.hash(password, 10);
     const verificationCode = crypto.randomBytes(4).toString('hex');
     
@@ -64,6 +71,12 @@ export const registerUser = async (email: string, password: string, name?: strin
 
 export const loginUser = async (email: string, password: string) => {
   try {
+    if (!isEmailValid(email)) {
+      throw new Error('Invalid email format');
+    }
+    if (!password) {
+      throw new Error('Password is required');
+    }
     const user = await prisma.user.findUnique({
       where: { email },
     });
