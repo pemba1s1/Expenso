@@ -9,9 +9,17 @@ const upload = multer({ storage: storage });
 
 /**
  * @swagger
+ * tags:
+ *   name: Expenses
+ *   description: Expense management
+ */
+
+/**
+ * @swagger
  * /expense:
  *   post:
  *     summary: Add a new expense
+ *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -37,6 +45,7 @@ router.post('/', authenticateToken, upload.single('receiptImage'), addExpenseCon
  * /expense/approve:
  *   post:
  *     summary: Approve an expense
+ *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
  *     requestBody:

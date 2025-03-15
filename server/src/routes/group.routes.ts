@@ -6,9 +6,17 @@ const router = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Groups
+ *   description: Group management
+ */
+
+/**
+ * @swagger
  * /group/create:
  *   post:
  *     summary: Create a new group
+ *     tags: [Groups]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -33,6 +41,7 @@ router.post('/create', authenticateToken, createGroupController);
  * /group/all:
  *   get:
  *     summary: Get all groups for the current user
+ *     tags: [Groups]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -48,6 +57,7 @@ router.get('/all', authenticateToken, getUserGroupsController);
  * /group/{id}:
  *   get:
  *     summary: Get group by ID
+ *     tags: [Groups]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -69,6 +79,7 @@ router.get('/:id', authenticateToken, getGroupByIdController);
  * /group/{id}/users:
  *   get:
  *     summary: Get users in a group
+ *     tags: [Groups]
  *     security:
  *       - bearerAuth: []
  *     parameters:

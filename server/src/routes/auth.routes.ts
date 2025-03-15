@@ -6,9 +6,17 @@ const router = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Auth
+ *   description: Authentication management
+ */
+
+/**
+ * @swagger
  * /auth/google:
  *   get:
  *     summary: Google login
+ *     tags: [Auth]
  *     responses:
  *       302:
  *         description: Redirect to Google login
@@ -20,6 +28,7 @@ router.get('/google', googleLogin);
  * /auth/google/callback:
  *   get:
  *     summary: Google login callback
+ *     tags: [Auth]
  *     responses:
  *       200:
  *         description: Google login successful
@@ -33,6 +42,7 @@ router.get('/google/callback', googleCallback);
  * /auth/register:
  *   post:
  *     summary: Register a new user
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -61,6 +71,7 @@ router.post('/register', registerUserController);
  * /auth/login:
  *   post:
  *     summary: Login a user
+ *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
@@ -77,8 +88,8 @@ router.post('/register', registerUserController);
  *         description: User logged in successfully
  *       401:
  *         description: Authentication failed
- *      400:
- *       description: Invalid email/password
+ *       400:
+ *         description: Invalid email/password
  */
 router.post('/login', loginUserController);
 
@@ -87,6 +98,7 @@ router.post('/login', loginUserController);
  * /auth/verify:
  *   get:
  *     summary: Verify a user
+ *     tags: [Auth]
  *     parameters:
  *       - in: query
  *         name: token
@@ -108,6 +120,7 @@ router.get('/verify', verifyUserController);
  * /auth/me:
  *   get:
  *     summary: Get current user data
+ *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:

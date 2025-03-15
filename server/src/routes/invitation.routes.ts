@@ -6,9 +6,17 @@ const router = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   name: Invitations
+ *   description: Invitation management
+ */
+
+/**
+ * @swagger
  * /invitation:
  *   post:
  *     summary: Invite a user to a group
+ *     tags: [Invitations]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -35,6 +43,7 @@ router.post('/', authenticateToken, inviteUserController);
  * /invitation/accept:
  *   post:
  *     summary: Accept an invitation
+ *     tags: [Invitations]
  *     requestBody:
  *       required: true
  *       content:
