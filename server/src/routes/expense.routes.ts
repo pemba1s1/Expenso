@@ -34,6 +34,8 @@ const upload = multer({ storage: storage });
  *                 format: binary
  *               groupId:
  *                 type: string 
+ *                 nullable: true
+ *                 description: Provide the group ID if the expense is for a group
  *     responses:
  *       201:
  *         description: Expense added successfully
