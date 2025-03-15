@@ -31,6 +31,24 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Group created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 userGroups:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       userId:
+ *                         type: string
+ *                       role:
+ *                         type: string
  *       500:
  *         description: Internal server error
  */

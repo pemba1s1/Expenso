@@ -33,6 +33,19 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Invitation sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 groupId:
+ *                   type: string
+ *                 status:
+ *                   type: string
  *       500:
  *         description: Internal server error
  */

@@ -15,7 +15,8 @@ export const addExpenseController = async (req: Request, res: Response) => {
 
   try {
     if (!receiptImage) {
-      throw new Error('No receipt image provided');
+      res.status(400).json({ error: 'No receipt image provided' });
+      return;
     }
 
     // Process the receipt image and get the S3 URL

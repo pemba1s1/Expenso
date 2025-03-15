@@ -32,9 +32,43 @@ const upload = multer({ storage: storage });
  *               receiptImage:
  *                 type: string
  *                 format: binary
+ *               groupId:
+ *                 type: string 
  *     responses:
  *       201:
  *         description: Expense added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                 amount:
+ *                   type: number
+ *                 details:
+ *                   type: object
+ *                 userId:
+ *                   type: string
+ *                 receiptImage:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                   nullable: true
+ *                 approvedBy:
+ *                   type: string
+ *                   nullable: true
+ *                 groupId:
+ *                   type: string
+ *                   nullable: true
+ *       400:
+ *         description: User ID is missing or no receipt image provided
  *       500:
  *         description: Internal server error
  */
@@ -60,6 +94,38 @@ router.post('/', authenticateToken, upload.single('receiptImage'), addExpenseCon
  *     responses:
  *       200:
  *         description: Expense approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                 amount:
+ *                   type: number
+ *                 details:
+ *                   type: object
+ *                 userId:
+ *                   type: string
+ *                 receiptImage:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                   nullable: true
+ *                 approvedBy:
+ *                   type: string
+ *                   nullable: true
+ *                 groupId:
+ *                   type: string
+ *                   nullable: true
+ *       403:
+ *         description: Not Authorized
  *       500:
  *         description: Internal server error
  */

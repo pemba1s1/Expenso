@@ -59,6 +59,17 @@ router.get('/google/callback', googleCallback);
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *                 name:
+ *                   type: string
  *       400:
  *         description: User already exists or invalid email/password
  *       500:
