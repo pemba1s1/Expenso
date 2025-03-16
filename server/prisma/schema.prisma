@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id                      String       @id @default(uuid())
-  googleId                String?      @unique
-  email                   String       @unique
+  id                      String              @id @default(uuid())
+  googleId                String?             @unique
+  email                   String              @unique
   password                String?
   name                    String?
   picture                 String?
-  verified                Boolean      @default(false)
+  verified                Boolean             @default(false)
   verificationToken       String?
   verificationTokenExpiry DateTime?
-  createdAt               DateTime     @default(now())
-  updatedAt               DateTime     @updatedAt
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
   userGroups              UserGroup[]
-  invitations             Invitation[] @relation("adminInvitations")
+  invitations             Invitation[]        @relation("adminInvitations")
   Expense                 Expense[]
+  categoryLimits          UserCategoryLimit[]
 }
 
 model Group {
@@ -74,9 +75,10 @@ model Expense {
 }
 
 model Category {
-  id              String            @id @default(uuid())
+  id              String              @id @default(uuid())
   name            String
   expenseCategory ExpenseCategory[]
+  userLimits      UserCategoryLimit[]
 }
 
 model ExpenseCategory {
@@ -89,6 +91,8 @@ model ExpenseCategory {
   updatedAt  DateTime      @updatedAt
   category   Category      @relation(fields: [categoryId], references: [id])
   expense    Expense       @relation(fields: [expenseId], references: [id])
+
+  @@unique([categoryId, expenseId])
 }
 
 model ExpenseItem {
@@ -99,4 +103,16 @@ model ExpenseItem {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+}
+
+model UserCategoryLimit {
+  userId     String
+  categoryId String
+  limit      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([userId, categoryId])
 }
