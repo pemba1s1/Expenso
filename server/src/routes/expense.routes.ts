@@ -1,5 +1,6 @@
 import express from 'express';
 import { addExpenseController, approveExpenseController } from '../controllers/expense.controller';
+import { expenseSummaryController } from '../controllers/expenseSummary.controller';
 import { authenticateToken, isGroupAdmin } from '../middlewares/auth.middleware';
 import multer from 'multer';
 
@@ -132,5 +133,54 @@ router.post('/', authenticateToken, upload.single('receiptImage'), addExpenseCon
  *         description: Internal server error
  */
 router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseController);
+
+/**
+ * @swagger
+ * /expense/summary:
+ *   get:
+ *     summary: Get expense summary
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: Start date for the summary
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: End date for the summary
+ *     responses:
+ *       200:
+ *         description: Expense summary retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalAmount:
+ *                   type: number
+ *                 totalAmountPerCategory:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       amount:
+ *                         type: number
+ *       400:
+ *         description: Start date and end date are required
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/summary', authenticateToken, expenseSummaryController);
 
 export default router;
