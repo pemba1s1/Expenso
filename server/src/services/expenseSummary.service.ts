@@ -5,7 +5,7 @@ interface ExpenseSummary {
   totalAmountPerCategory: Array<{ name: string, amount: number }>;
 }
 
-export const getExpenseSummary = async (startDate: Date, endDate: Date): Promise<ExpenseSummary> => {
+export const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: string): Promise<ExpenseSummary> => {
   try {
     const expenses = await prisma.expense.findMany({
       where: {
@@ -13,6 +13,7 @@ export const getExpenseSummary = async (startDate: Date, endDate: Date): Promise
           gte: startDate,
           lte: endDate,
         },
+        ...(groupId && { groupId }),
       },
       select: {
         id: true,

@@ -157,6 +157,12 @@ router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseControlle
  *           format: date
  *         required: true
  *         description: End date for the summary
+ *       - in: query
+ *         name: groupId
+ *         schema:
+ *           type: string
+ *           nullable: true
+ *         description: Group ID for the summary
  *     responses:
  *       200:
  *         description: Expense summary retrieved successfully
