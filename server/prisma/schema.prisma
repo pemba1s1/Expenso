@@ -80,16 +80,16 @@ model Category {
 }
 
 model ExpenseCategory {
-  id         String         @id @default(uuid())
+  id         String        @id @default(uuid())
   amount     Float
-  items      ExpenseItems[]
+  items      ExpenseItem[]
   categoryId String
   expenseId  String
-  category   Category       @relation(fields: [categoryId], references: [id])
-  expense    Expense        @relation(fields: [expenseId], references: [id])
+  category   Category      @relation(fields: [categoryId], references: [id])
+  expense    Expense       @relation(fields: [expenseId], references: [id])
 }
 
-model ExpenseItems {
+model ExpenseItem {
   id                String          @id @default(uuid())
   name              String
   amount            Float
