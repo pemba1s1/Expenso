@@ -20,12 +20,19 @@ export const addExpenseController = async (req: Request, res: Response) => {
     }
 
     // Process the receipt image and get the S3 URL
-    const {amount, receiptImageUrl, details} = await processReceiptImage(receiptImage.buffer);
+    const { amount, receiptImageUrl, details } = await processReceiptImage(receiptImage.buffer);
+
+    const expense = {
+      userId: user.id,
+      groupId,
+      amount,
+      receiptImageUrl
+    }
     
     // Create the expense
-    const expense = await createExpense({ userId: user.id, groupId, amount, receiptImage: receiptImageUrl, details });
+    const createdExpense = await createExpense({ expense, expenseCategory: details });
 
-    res.status(201).json(expense);
+    res.status(201).json(createdExpense);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ error: errorMessage });

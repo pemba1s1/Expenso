@@ -1,10 +1,10 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
-import { ExpenseCategory, ExpenseItems } from '../types/types';
+import { ExpenseItemWithoutId, ExtendedExpenseCategory } from '../types/types';
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 
-export const uploadImageToS3 = async (imageBuffer: Buffer): Promise<String> => {
+export const uploadImageToS3 = async (imageBuffer: Buffer): Promise<string> => {
   try {
     const s3Params = {
       Bucket: process.env.S3_BUCKET_NAME,
@@ -22,9 +22,13 @@ export const uploadImageToS3 = async (imageBuffer: Buffer): Promise<String> => {
   }
 }
 
-export const processReceiptImage = async (imageBuffer: Buffer): Promise<{amount: number, receiptImageUrl: String, details: Array<ExpenseCategory>}> => {
+export const processReceiptImage = async (imageBuffer: Buffer): Promise<{amount: number, receiptImageUrl: string, details: Array<ExtendedExpenseCategory>}> => {
   try {
     const receiptImageUrl = await uploadImageToS3(imageBuffer);
+
+    // Fetch all the categories from the database
+    // const categories = await prisma.expenseCategory.findMany();
+    // and pass it to the LLM endpoint
 
     // Optionally, call the LLM endpoint if needed
     // const response = await axios.post('LLM_ENDPOINT_URL', imageBuffer, {
@@ -34,15 +38,36 @@ export const processReceiptImage = async (imageBuffer: Buffer): Promise<{amount:
     // });
 
     const amount = 123; // Get the amount from the LLM response
-    const items : Array<ExpenseItems> = [
-      { name: 'Food', amount: 50 },
-      { name: 'Transport', amount: 20 },
-      { name: 'Misc', amount: 53 },
+    const items : Array<ExpenseItemWithoutId> = [
+      {
+        name: 'Food', 
+        amount: 50,
+      },
+      {
+        name: 'Transport',
+        amount: 20,
+      },
+      {
+        name: 'Misc', 
+        amount: 53,
+      },
     ]
-    const details : Array<ExpenseCategory> = [
-      { name: 'Food', amount: 50, items },
-      { name: 'Transport', amount: 20, items },
-      { name: 'Misc', amount: 53, items },
+    const details : Array<ExtendedExpenseCategory> = [
+      {
+        amount: 50,
+        categoryId: '1',
+        items,
+      },
+      {
+        amount: 20,
+        categoryId: '2',
+        items
+      },
+      {
+        amount: 53,
+        categoryId: '3',
+        items
+      },
     ]; // Get the details from the LLM response
 
     return {amount, receiptImageUrl, details}; // Return the S3 URL

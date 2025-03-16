@@ -1,18 +1,5 @@
-export interface CreateExpenseInput {
-  userId: string;
-  groupId?: string;
-  amount: number;
-  receiptImage: any;
-  details: Array<ExpenseCategory>;
-}
+import { ExpenseCategory, ExpenseItem } from '@prisma/client';
 
-export interface ExpenseItems {
-  name: string;
-  amount: number;
-}
+export type ExpenseItemWithoutId = Omit<ExpenseItem, 'id' | 'expenseCategoryId' | 'createdAt' | 'updatedAt'>;
 
-export interface ExpenseCategory {
-  name: string;
-  amount: number;
-  items: Array<ExpenseItems>;
-}
+export type ExtendedExpenseCategory = Omit<ExpenseCategory, 'id' | 'expenseId' | 'createdAt' | 'updatedAt'> & { items: Array<ExpenseItemWithoutId> };

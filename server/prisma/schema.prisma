@@ -59,18 +59,18 @@ model Invitation {
 }
 
 model Expense {
-  id           String            @id @default(uuid())
-  userId       String
-  groupId      String?
-  amount       Float
-  receiptImage String
-  details      ExpenseCategory[]
-  status       String?           @default("pending")
-  approvedBy   String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  user         User              @relation(fields: [userId], references: [id])
-  group        Group?            @relation(fields: [groupId], references: [id])
+  id              String            @id @default(uuid())
+  userId          String
+  groupId         String?
+  amount          Float
+  receiptImageUrl String
+  details         ExpenseCategory[]
+  status          String?           @default("pending")
+  approvedBy      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id])
+  group           Group?            @relation(fields: [groupId], references: [id])
 }
 
 model Category {
@@ -85,6 +85,8 @@ model ExpenseCategory {
   items      ExpenseItem[]
   categoryId String
   expenseId  String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
   category   Category      @relation(fields: [categoryId], references: [id])
   expense    Expense       @relation(fields: [expenseId], references: [id])
 }
@@ -94,5 +96,7 @@ model ExpenseItem {
   name              String
   amount            Float
   expenseCategoryId String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
   expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
 }
