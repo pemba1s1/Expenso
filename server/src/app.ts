@@ -29,7 +29,8 @@ app.use(cookieParser());
 
 // Configure CORS
 app.use(cors({
-  origin: process.env.CLIENT_URL, // Allow requests from this origin
+  // origin: process.env.CLIENT_URL, // Allow requests from this origin
+  origin: "*",
   credentials: true, // Allow cookies to be sent with requests
 }));
 

@@ -9,6 +9,9 @@ Before running the application, ensure you have the following installed:
 
 ## Running the Application
 
+`with bun`
+makesure `bun install --save-text-lockfile`
+
 To run the application using Docker Compose, follow these steps:
 
 1. Clone the repository:

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useLogin, useRegister } from "@/hooks/use-auth"
 import { useSearchParams } from "next/navigation"
 
-export default function AuthPage() {
+// Component that uses useSearchParams wrapped in Suspense
+function AuthContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState(tabParam === 'signup' ? 'signup' : 'login')
@@ -169,5 +170,22 @@ export default function AuthPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+// Main component that wraps AuthContent in Suspense
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <AuthContent />
+    </Suspense>
   )
 }

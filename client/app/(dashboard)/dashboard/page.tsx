@@ -4,7 +4,7 @@ import { useState } from "react"
 import { BarChart, CreditCard, DollarSign, Download, Home, Plus, Settings, Upload, User } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { useDashboard } from "../layout"
+import { useDashboard } from "../../../hooks/use-dashboard"
 import { useAuthContext } from "@/app/providers"
 import { LogoutButton } from "@/components/logout-button"
 import { Button } from "@/components/ui/button"
