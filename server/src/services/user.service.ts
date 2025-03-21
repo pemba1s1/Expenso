@@ -3,7 +3,7 @@ import { logger } from '../utils/logger';
 import bcryptjs from 'bcryptjs';
 import { sendVerificationEmail } from './email.service';
 import { generateAccessToken, verifyAccessToken } from '../config/jwt';
-import { User } from '@prisma/client';
+import { User, UserRole } from '@prisma/client';
 import { config } from '../config/env';
 import crypto from 'crypto';
 import { isEmailValid, isPasswordValid } from '../utils/validation';
@@ -24,6 +24,7 @@ export const findOrCreateUser = async (profile: any) => {
           name: profile.displayName,
           picture: profile.photos ? profile.photos[0].value : null,
           verified: true,
+          role: UserRole.BASIC,
         },
       });
       logger.info(`New user created: ${profile.emails[0].value}`);
@@ -54,6 +55,7 @@ export const registerUser = async (email: string, password: string, name?: strin
         name,
         verificationToken: verificationCode,
         verificationTokenExpiry: new Date(Date.now() + 3600000), // 1 hour expiry
+        role: UserRole.BASIC,
       },
     });
 

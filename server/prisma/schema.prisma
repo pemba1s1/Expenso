@@ -17,6 +17,7 @@ model User {
   verified                Boolean             @default(false)
   verificationToken       String?
   verificationTokenExpiry DateTime?
+  role                    UserRole            @default(BASIC)
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   userGroups              UserGroup[]
@@ -28,6 +29,7 @@ model User {
 model Group {
   id          String       @id @default(uuid())
   name        String
+  type        GroupType    @default(NORMAL)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   userGroups  UserGroup[]
@@ -66,7 +68,7 @@ model Expense {
   amount          Float
   receiptImageUrl String
   details         ExpenseCategory[]
-  status          String?           @default("pending")
+  status          String?
   approvedBy      String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -115,4 +117,15 @@ model UserCategoryLimit {
   category   Category @relation(fields: [categoryId], references: [id])
 
   @@id([userId, categoryId])
+}
+
+enum UserRole {
+  BASIC
+  PREMIUM
+  BUSINESS_PREMIUM
+}
+
+enum GroupType {
+  NORMAL
+  BUSINESS
 }

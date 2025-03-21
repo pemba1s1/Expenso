@@ -12,7 +12,7 @@ export const setUserCategoryLimitController = async (req: Request, res: Response
   }
 
   try {
-    const userCategoryLimit = await setUserCategoryLimit(user.id, categoryId, limit);
+    const userCategoryLimit = await setUserCategoryLimit(user, categoryId, limit);
     res.status(201).json(userCategoryLimit);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

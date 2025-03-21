@@ -1,11 +1,20 @@
+import { User, UserRole } from '@prisma/client';
 import prisma from '../config/prismaClient';
 
-export const setUserCategoryLimit = async (userId: string, categoryId: string, limit: number) => {
+export const setUserCategoryLimit = async (user: User, categoryId: string, limit: number) => {
   try {
+    const userCategoryLimits = await prisma.userCategoryLimit.findMany({
+      where: { userId: user.id },
+    });
+
+    if (userCategoryLimits.length >= 4 && user.role == UserRole.BASIC) {
+      throw new Error('Basic User can only set limits for up to 4 categories');
+    }
+
     const userCategoryLimit = await prisma.userCategoryLimit.upsert({
       where: {
         userId_categoryId: {
-          userId,
+          userId: user.id,
           categoryId,
         },
       },
@@ -13,7 +22,7 @@ export const setUserCategoryLimit = async (userId: string, categoryId: string, l
         limit,
       },
       create: {
-        userId,
+        userId: user.id,
         categoryId,
         limit,
       },

@@ -1,5 +1,5 @@
+import { UserRole } from '@prisma/client';
 import prisma from '../config/prismaClient';
-import { sendInviteEmail } from '../utils/email';
 import { logger } from '../utils/logger';
 import bcryptjs from 'bcryptjs';
 
@@ -65,6 +65,7 @@ export const acceptInvitation = async (invitationId: string, password?: string) 
         email: invitation.email,
         password: hashedPassword,
         verified: true,
+        role: UserRole.PREMIUM,
       },
     });
   }

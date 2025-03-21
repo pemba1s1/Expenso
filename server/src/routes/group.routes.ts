@@ -28,6 +28,9 @@ const router = express.Router();
  *             properties:
  *               name:
  *                 type: string
+ *               type:
+ *                 type: string
+ *                 enum: [NORMAL, BUSINESS]
  *     responses:
  *       201:
  *         description: Group created successfully
@@ -39,6 +42,8 @@ const router = express.Router();
  *                 id:
  *                   type: string
  *                 name:
+ *                   type: string
+ *                 type:
  *                   type: string
  *                 userGroups:
  *                   type: array

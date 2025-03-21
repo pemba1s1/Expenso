@@ -1,4 +1,5 @@
 
+import { GroupType } from '@prisma/client';
 import prisma from '../config/prismaClient';
 import { ExtendedExpenseCategory } from '../types/types';
 
@@ -14,6 +15,21 @@ interface ExpenseDetails {
 
 export const createExpense = async ({ expense : { userId, groupId, amount, receiptImageUrl }, expenseCategory }: ExpenseDetails) => {
   try {
+    let status: 'pending' | 'approved' | 'rejected' | undefined = undefined;
+
+    if (groupId) {
+      const group = await prisma.group.findUnique({
+        where: { id: groupId },
+        select: { id: true, type: true },
+      });
+
+      if (!group) {
+        throw new Error('Group not found');
+      }
+
+      if (group.type === GroupType.BUSINESS) status = 'pending';
+    }
+
     const expense = await prisma.$transaction(async (prisma) => {
       const createdExpense = await prisma.expense.create({
         data: {
@@ -21,7 +37,7 @@ export const createExpense = async ({ expense : { userId, groupId, amount, recei
           groupId,
           amount,
           receiptImageUrl,
-          status: groupId ? 'pending' : undefined,
+          status,
         },
       });
 
@@ -57,7 +73,7 @@ export const createExpense = async ({ expense : { userId, groupId, amount, recei
 export const approveExpense = async (expenseId: string, adminId: string) => {
   try {
     const expense = await prisma.expense.update({
-      where: { id: expenseId },
+      where: { id: expenseId, status: 'pending' },
       data: { status: 'approved', approvedBy: adminId },
     });
 

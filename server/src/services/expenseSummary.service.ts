@@ -1,11 +1,13 @@
 import prisma from '../config/prismaClient';
+import { UserRole } from '@prisma/client';
 
 interface ExpenseSummary {
   totalAmount: number;
   totalAmountPerCategory: Array<{ name: string, amount: number }>;
 }
 
-export const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: string): Promise<ExpenseSummary> => {
+const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: string): Promise<ExpenseSummary> => {
+
   try {
     const expenses = await prisma.expense.findMany({
       where: {
@@ -56,3 +58,18 @@ export const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?
     throw new Error('Failed to generate expense summary');
   }
 };
+
+export const getExpenseSummaryForCustomDateRange = async (startDate: Date, endDate: Date, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
+  if (userRole === UserRole.BASIC) {
+    throw new Error('Basic users cannot access custom date summaries');
+  }
+
+  return getExpenseSummary(startDate, endDate, groupId);
+}
+
+export const getMonthlyExpenseSummary = async (year: number, month: number, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+
+  return getExpenseSummary(startDate, endDate, groupId);
+}

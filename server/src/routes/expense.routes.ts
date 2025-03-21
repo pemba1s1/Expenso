@@ -1,6 +1,6 @@
 import express from 'express';
 import { addExpenseController, approveExpenseController } from '../controllers/expense.controller';
-import { expenseSummaryController } from '../controllers/expenseSummary.controller';
+import { customDateExpenseSummaryController, monthlyExpenseSummaryController } from '../controllers/expenseSummary.controller';
 import { authenticateToken, isGroupAdmin } from '../middlewares/auth.middleware';
 import multer from 'multer';
 
@@ -187,6 +187,59 @@ router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseControlle
  *       500:
  *         description: Internal server error
  */
-router.get('/summary', authenticateToken, expenseSummaryController);
+router.get('/summary', authenticateToken, customDateExpenseSummaryController);
+
+/**
+ * @swagger
+ * /expense/summary:
+ *   get:
+ *     summary: Get monthly expense summary
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Year for the summary
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Month for the summary
+ *       - in: query
+ *         name: groupId
+ *         schema:
+ *           type: string
+ *           nullable: true
+ *         description: Group ID for the summary
+ *     responses:
+ *       200:
+ *         description: Expense summary retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalAmount:
+ *                   type: number
+ *                 totalAmountPerCategory:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       amount:
+ *                         type: number
+ *       400:
+ *         description: Start date and end date are required
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/monthly-summary', authenticateToken, monthlyExpenseSummaryController);
 
 export default router;
