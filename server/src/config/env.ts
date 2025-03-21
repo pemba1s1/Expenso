@@ -19,6 +19,7 @@ type Config = {
   AWS_REGION: string;
   CLIENT_EMAIL: string;
   SERVICE_EMAIL: string;
+  OPENROUTER_API_KEY: string;
 }
 
 export const config = {
@@ -37,4 +38,5 @@ export const config = {
   AWS_REGION: process.env.AWS_REGION || "ca-central-1",
   CLIENT_EMAIL: process.env.CLIENT_EMAIL || "",
   SERVICE_EMAIL: process.env.SERVICE_EMAIL || "",
+  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
 } as Config;
