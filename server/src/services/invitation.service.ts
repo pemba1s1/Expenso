@@ -1,5 +1,5 @@
+import { UserRole } from '@prisma/client';
 import prisma from '../config/prismaClient';
-import { sendInviteEmail } from '../utils/email';
 import { logger } from '../utils/logger';
 import bcryptjs from 'bcryptjs';
 
@@ -59,12 +59,13 @@ export const acceptInvitation = async (invitationId: string, password?: string) 
       throw new Error('Password is required for new users');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcryptjs.hash(password, 10);
     user = await prisma.user.create({
       data: {
         email: invitation.email,
         password: hashedPassword,
         verified: true,
+        role: UserRole.PREMIUM,
       },
     });
   }

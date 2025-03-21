@@ -3,5 +3,4 @@
 
 .env
 
-/prisma/migrations
 /logs

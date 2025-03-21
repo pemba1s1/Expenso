@@ -8,28 +8,33 @@ datasource db {
 }
 
 model User {
-  id                     String       @id @default(uuid())
-  googleId               String?      @unique
-  email                  String       @unique
-  password               String?
-  name                   String?
-  picture                String?
-  verified               Boolean      @default(false)
-  verificationToken      String?
+  id                      String              @id @default(uuid())
+  googleId                String?             @unique
+  email                   String              @unique
+  password                String?
+  name                    String?
+  picture                 String?
+  verified                Boolean             @default(false)
+  verificationToken       String?
   verificationTokenExpiry DateTime?
-  createdAt              DateTime     @default(now())
-  updatedAt              DateTime     @updatedAt
-  userGroups             UserGroup[]
-  invitations            Invitation[] @relation("adminInvitations")
+  role                    UserRole            @default(BASIC)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  userGroups              UserGroup[]
+  invitations             Invitation[]        @relation("adminInvitations")
+  Expense                 Expense[]
+  categoryLimits          UserCategoryLimit[]
 }
 
 model Group {
   id          String       @id @default(uuid())
   name        String
+  type        GroupType    @default(NORMAL)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   userGroups  UserGroup[]
   invitations Invitation[]
+  Expense     Expense[]
 }
 
 model UserGroup {
@@ -54,4 +59,73 @@ model Invitation {
   group     Group    @relation(fields: [groupId], references: [id])
 
   @@unique([email, groupId])
+}
+
+model Expense {
+  id              String            @id @default(uuid())
+  userId          String
+  groupId         String?
+  amount          Float
+  receiptImageUrl String
+  details         ExpenseCategory[]
+  status          String?
+  approvedBy      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id])
+  group           Group?            @relation(fields: [groupId], references: [id])
+}
+
+model Category {
+  id              String              @id @default(uuid())
+  name            String              @unique
+  expenseCategory ExpenseCategory[]
+  userLimits      UserCategoryLimit[]
+}
+
+model ExpenseCategory {
+  id         String        @id @default(uuid())
+  amount     Float
+  items      ExpenseItem[]
+  categoryId String
+  expenseId  String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  category   Category      @relation(fields: [categoryId], references: [id])
+  expense    Expense       @relation(fields: [expenseId], references: [id])
+
+  @@unique([categoryId, expenseId])
+}
+
+model ExpenseItem {
+  id                String          @id @default(uuid())
+  name              String
+  amount            Float
+  expenseCategoryId String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
+}
+
+model UserCategoryLimit {
+  userId     String
+  categoryId String
+  limit      Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([userId, categoryId])
+}
+
+enum UserRole {
+  BASIC
+  PREMIUM
+  BUSINESS_PREMIUM
+}
+
+enum GroupType {
+  NORMAL
+  BUSINESS
 }
