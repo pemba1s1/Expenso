@@ -20,6 +20,8 @@ type Config = {
   CLIENT_EMAIL: string;
   SERVICE_EMAIL: string;
   OPENROUTER_API_KEY: string;
+  STRIPE_SECRET_KEY: string;
+  STRIPE_PUBLIC_KEY: string;
 }
 
 export const config = {
@@ -39,4 +41,6 @@ export const config = {
   CLIENT_EMAIL: process.env.CLIENT_EMAIL || "",
   SERVICE_EMAIL: process.env.SERVICE_EMAIL || "",
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || "",
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
+  STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY || '',
 } as Config;

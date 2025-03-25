@@ -1,5 +1,5 @@
 import express from 'express';
-import { addExpenseController, approveExpenseController } from '../controllers/expense.controller';
+import { addExpenseController, approveExpenseController, getUserExpensesController, getExpenseByIdController } from '../controllers/expense.controller';
 import { customDateExpenseSummaryController, monthlyExpenseSummaryController } from '../controllers/expenseSummary.controller';
 import { authenticateToken, isGroupAdmin } from '../middlewares/auth.middleware';
 import multer from 'multer';
@@ -241,5 +241,101 @@ router.get('/summary', authenticateToken, customDateExpenseSummaryController);
  *         description: Internal server error
  */
 router.get('/monthly-summary', authenticateToken, monthlyExpenseSummaryController);
+
+/**
+ * @swagger
+ * /expense/user:
+ *   get:
+ *     summary: Get all expenses of a specific user
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: groupId
+ *         schema:
+ *           type: string
+ *           nullable: true
+ *         description: Group ID to filter expenses
+ *     responses:
+ *       200:
+ *         description: Expenses retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   amount:
+ *                     type: number
+ *                   receiptImageUrl:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *                   updatedAt:
+ *                     type: string
+ *                     format: date-time
+ *                   groupId:
+ *                     type: string
+ *                     nullable: true
+ *       400:
+ *         description: User ID is missing
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/user', authenticateToken, getUserExpensesController);
+
+/**
+ * @swagger
+ * /expense/{id}:
+ *   get:
+ *     summary: Get a specific expense by ID
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Expense ID
+ *     responses:
+ *       200:
+ *         description: Expense retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 amount:
+ *                   type: number
+ *                 receiptImageUrl:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                 groupId:
+ *                   type: string
+ *                   nullable: true
+ *       400:
+ *         description: Expense ID is missing
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id', authenticateToken, getExpenseByIdController);
 
 export default router;

@@ -3,7 +3,7 @@ import { GroupType, User, UserRole } from '@prisma/client';
 
 export const createGroup = async (name: string, user: User, type: GroupType = GroupType.NORMAL) => {
 
-  if (type === GroupType.BUSINESS && user.role !== UserRole.BUSINESS_PREMIUM) {
+  if (type === GroupType.BUSINESS && user.subscriptionPlan !== UserRole.BUSINESS_PREMIUM) {
     throw new Error('Only Business Premium users can create Business groups');
   }
 

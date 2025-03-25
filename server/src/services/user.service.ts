@@ -24,7 +24,7 @@ export const findOrCreateUser = async (profile: any) => {
           name: profile.displayName,
           picture: profile.photos ? profile.photos[0].value : null,
           verified: true,
-          role: UserRole.BASIC,
+          subscriptionPlan: UserRole.BASIC,
         },
       });
       logger.info(`New user created: ${profile.emails[0].value}`);
@@ -45,6 +45,9 @@ export const registerUser = async (email: string, password: string, name?: strin
     if (!isPasswordValid(password)) {
       throw new Error('Password must be at least 8 characters long and contain at least one number and one special character');
     }
+    if (!name) {
+      throw new Error('Name is required');
+    }
     const hashedPassword = await bcryptjs.hash(password, 10);
     const verificationCode = crypto.randomBytes(4).toString('hex');
     
@@ -55,7 +58,7 @@ export const registerUser = async (email: string, password: string, name?: strin
         name,
         verificationToken: verificationCode,
         verificationTokenExpiry: new Date(Date.now() + 3600000), // 1 hour expiry
-        role: UserRole.BASIC,
+        subscriptionPlan: UserRole.BASIC,
       },
     });
 

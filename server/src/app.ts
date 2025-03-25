@@ -9,6 +9,7 @@ import groupRoutes from "./routes/group.routes";
 import invitationRoutes from "./routes/invitation.routes";
 import expenseRoutes from "./routes/expense.routes";
 import userCategoryLimitRoutes from './routes/userCategoryLimit.routes';
+import subscriptionRoutes from './routes/subscription.routes';
 import { setupSwagger } from './config/swagger';
 
 import './config/passport';  // Initialize passport strategy
@@ -42,6 +43,7 @@ app.use("/group", groupRoutes);
 app.use("/invitation", invitationRoutes);
 app.use("/expense", expenseRoutes);
 app.use("/userCategoryLimit", userCategoryLimitRoutes);
+app.use("/subscription", subscriptionRoutes);
 
 // Setup Swagger
 setupSwagger(app);

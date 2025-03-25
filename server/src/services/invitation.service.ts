@@ -40,7 +40,7 @@ export const inviteUser = async (email: string, adminId: string, groupId: string
   return invitation;
 };
 
-export const acceptInvitation = async (invitationId: string, password?: string) => {
+export const acceptInvitation = async (invitationId: string, password?: string, name?: string) => {
   const invitation = await prisma.invitation.findUnique({
     where: { id: invitationId },
     include: { group: true },
@@ -59,13 +59,18 @@ export const acceptInvitation = async (invitationId: string, password?: string) 
       throw new Error('Password is required for new users');
     }
 
+    if (!name) {
+      throw new Error('Name is required for new users');
+    }
+
     const hashedPassword = await bcryptjs.hash(password, 10);
     user = await prisma.user.create({
       data: {
         email: invitation.email,
         password: hashedPassword,
         verified: true,
-        role: UserRole.PREMIUM,
+        subscriptionPlan: UserRole.PREMIUM,
+        name,
       },
     });
   }

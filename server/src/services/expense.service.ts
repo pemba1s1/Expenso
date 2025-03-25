@@ -1,4 +1,3 @@
-
 import { GroupType } from '@prisma/client';
 import prisma from '../config/prismaClient';
 import { ExtendedExpenseCategory } from '../types/types';
@@ -80,6 +79,37 @@ export const approveExpense = async (expenseId: string, adminId: string) => {
     return expense;
   } catch (error) {
     throw new Error('Failed to approve expense');
+  }
+};
+
+export const getUserExpenses = async (userId: string, groupId?: string) => {
+  try {
+    const expenses = await prisma.expense.findMany({
+      where: {
+        userId,
+        ...(groupId && { groupId }),
+      }
+    });
+
+    return expenses;
+  } catch (error) {
+    throw new Error('Failed to fetch user expenses');
+  }
+};
+
+export const getExpenseById = async (userId: string, expenseId: string) => {
+  try {
+    const expense = await prisma.expense.findUnique({
+      where: { userId, id: expenseId },
+    });
+
+    if (!expense) {
+      throw new Error('Expense not found');
+    }
+
+    return expense;
+  } catch (error) {
+    throw new Error('Failed to fetch expense');
   }
 };
 
