@@ -42,6 +42,7 @@ model Group {
   userGroups  UserGroup[]
   invitations Invitation[]
   Expense     Expense[]
+  insights    Insight[]
 }
 
 model UserGroup {
@@ -137,6 +138,17 @@ model StripePlan {
   priceId     String
 }
 
+model Insight {
+  date          DateTime @id
+  groupId       String
+  summary       String
+  topCategories String
+  tips          String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  group         Group    @relation(fields: [groupId], references: [id])
+}
+
 enum UserRole {
   BASIC
   PREMIUM
@@ -163,3 +175,4 @@ enum StripePlanName {
   BUSINESS_PREMIUM_SEMI_ANNUALLY
   BUSINESS_PREMIUM_ANNUALLY
 }
+
