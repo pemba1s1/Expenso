@@ -14,6 +14,7 @@ async function startServer() {
       logger.info(`🚀 Server running on http://localhost:${config.PORT}`);
     });
   } catch (error) {
+    console.log(error);
     logger.error("❌ Failed to connect to the database");
     logger.error(error);
     process.exit(1); // Exit with error code
