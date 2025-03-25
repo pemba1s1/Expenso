@@ -8,6 +8,7 @@ This is the backend server for the Expenso application. It provides APIs for man
 - Bun (v1 or later)
 - PostgreSQL
 - Docker (optional, for containerized setup)
+- Stripe account (for payment processing)
 
 ## Setup
 
@@ -46,6 +47,23 @@ This is the backend server for the Expenso application. It provides APIs for man
 
    ```bash
    bunx prisma generate
+   ```
+
+7. **Set up Stripe:**
+
+   Create a Stripe account and get your API keys. Update the `.env` file with your Stripe keys:
+
+   ```env
+   STRIPE_SECRET_KEY=your_stripe_secret_key
+   STRIPE_PUBLIC_KEY=your_stripe_public_key
+   ```
+
+8. **Run Stripe Migration:**
+
+   Migrate stripe products plans to stripe account and add them to database
+
+   ```bash
+   bun stripe-migrate.ts
    ```
 
 ## Running the Server

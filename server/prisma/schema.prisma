@@ -8,22 +8,30 @@ datasource db {
 }
 
 model User {
-  id                      String              @id @default(uuid())
-  googleId                String?             @unique
-  email                   String              @unique
-  password                String?
-  name                    String?
-  picture                 String?
-  verified                Boolean             @default(false)
-  verificationToken       String?
-  verificationTokenExpiry DateTime?
-  role                    UserRole            @default(BASIC)
-  createdAt               DateTime            @default(now())
-  updatedAt               DateTime            @updatedAt
-  userGroups              UserGroup[]
-  invitations             Invitation[]        @relation("adminInvitations")
-  Expense                 Expense[]
-  categoryLimits          UserCategoryLimit[]
+  id                              String                @id @default(uuid())
+  googleId                        String?               @unique
+  email                           String                @unique
+  password                        String?
+  name                            String
+  picture                         String?
+  verified                        Boolean               @default(false)
+  verificationToken               String?
+  verificationTokenExpiry         DateTime?
+  stripeCustomerId                String?
+  stripeSubscriptionId            String?
+  subscriptionStatus              String?
+  subscriptionPlan                UserRole              @default(BASIC)
+  subscriptionInterval            SubscriptionInterval?
+  subscriptionStartDate           DateTime?
+  subscriptionEndDate             DateTime?
+  subscriptionAmount              Float?
+  totalAllowedBusinessGroupMember String?
+  createdAt                       DateTime              @default(now())
+  updatedAt                       DateTime              @updatedAt
+  userGroups                      UserGroup[]
+  invitations                     Invitation[]          @relation("adminInvitations")
+  Expense                         Expense[]
+  categoryLimits                  UserCategoryLimit[]
 }
 
 model Group {
@@ -119,6 +127,16 @@ model UserCategoryLimit {
   @@id([userId, categoryId])
 }
 
+model StripePlan {
+  id          String               @id
+  name        StripePlanName
+  description String
+  amount      String
+  currency    String
+  type        UserRole
+  interval    SubscriptionInterval
+}
+
 enum UserRole {
   BASIC
   PREMIUM
@@ -128,4 +146,20 @@ enum UserRole {
 enum GroupType {
   NORMAL
   BUSINESS
+}
+
+enum SubscriptionInterval {
+  MONTH
+  SEMI_ANNUAL
+  YEAR
+}
+
+enum StripePlanName {
+  BASIC
+  PREMIUM_MONTHLY
+  PREMIUM_SEMI_ANNUALLY
+  PREMIUM_ANNUALLY
+  BUSINESS_PREMIUM_MONTHLY
+  BUSINESS_PREMIUM_SEMI_ANNUALLY
+  BUSINESS_PREMIUM_ANNUALLY
 }
