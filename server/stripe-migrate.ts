@@ -71,7 +71,7 @@ products.forEach(async (productData) => {
     if (productData.amount) {
       const interval = productData.interval === SubscriptionInterval.YEAR ? 'year' : 'month';
       const interval_count = productData.interval === SubscriptionInterval.SEMI_ANNUAL ? 6 : 1;
-      await stripe.prices.create({
+      const price = await stripe.prices.create({
         unit_amount: productData.amount,
         currency: productData.currency,
         product: product.id,
@@ -86,6 +86,7 @@ products.forEach(async (productData) => {
       await prisma.stripePlan.create({
         data: {
           id: product.id,
+          priceId: price.id,
           name: productData.name,
           description: productData.description,
           amount: productData.amount.toString(),
