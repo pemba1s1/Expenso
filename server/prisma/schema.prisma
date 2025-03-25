@@ -18,6 +18,7 @@ model User {
   verificationToken               String?
   verificationTokenExpiry         DateTime?
   stripeCustomerId                String?
+  stripeSubscription              Json?
   stripeSubscriptionId            String?
   subscriptionStatus              String?
   subscriptionPlan                UserRole              @default(BASIC)

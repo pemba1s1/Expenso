@@ -38,7 +38,7 @@ export const googleCallback = (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       picture: user.picture,
-      role: user.role, // Added role
+      role: user.subscriptionPlan, // Added role
     },
   });
 };
@@ -98,7 +98,7 @@ export const verifyUserController = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         picture: user.picture,
-        role: user.role, // Added role
+        role: user.subscriptionPlan, // Added role
       }
     });
   } catch (error) {
@@ -131,7 +131,7 @@ export const getCurrentUserController = async (req: Request, res: Response) => {
       email: user.email,
       name: user.name,
       picture: user.picture,
-      role: user.role, // Added role
+      role: user.subscriptionPlan, // Added role
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

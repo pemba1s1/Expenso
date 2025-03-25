@@ -7,7 +7,7 @@ export const setUserCategoryLimit = async (user: User, categoryId: string, limit
       where: { userId: user.id },
     });
 
-    if (userCategoryLimits.length >= 4 && user.role == UserRole.BASIC) {
+    if (userCategoryLimits.length >= 4 && user.subscriptionPlan == UserRole.BASIC) {
       throw new Error('Basic User can only set limits for up to 4 categories');
     }
 

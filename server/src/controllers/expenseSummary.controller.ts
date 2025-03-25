@@ -12,7 +12,7 @@ export const customDateExpenseSummaryController = async (req: Request, res: Resp
   }
 
   try {
-    const summary = await getExpenseSummaryForCustomDateRange(new Date(startDate as string), new Date(endDate as string), user.role, groupId as string);
+    const summary = await getExpenseSummaryForCustomDateRange(new Date(startDate as string), new Date(endDate as string), user.subscriptionPlan, groupId as string);
     res.status(200).json(summary);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -26,7 +26,7 @@ export const monthlyExpenseSummaryController = async (req: Request, res: Respons
   const user: User = req.user as User;
 
   try {
-    const summary = await getMonthlyExpenseSummary(Number(year), Number(month), user.role, groupId as string);
+    const summary = await getMonthlyExpenseSummary(Number(year), Number(month), user.subscriptionPlan, groupId as string);
     res.status(200).json(summary);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
