@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import { ExpenseItemWithoutId, ExtendedExpenseCategory } from '../types/types';
+import { getReceiptData } from './openai';
 
 const s3 = new S3Client({ region: process.env.AWS_REGION });
 
@@ -25,6 +26,7 @@ export const uploadImageToS3 = async (imageBuffer: Buffer): Promise<string> => {
 export const processReceiptImage = async (imageBuffer: Buffer): Promise<{amount: number, receiptImageUrl: string, details: Array<ExtendedExpenseCategory>}> => {
   try {
     const receiptImageUrl = await uploadImageToS3(imageBuffer);
+    // const receiptData = getReceiptData
 
     // Fetch all the categories from the database
     // const categories = await prisma.expenseCategory.findMany();

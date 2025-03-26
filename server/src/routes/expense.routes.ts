@@ -1,6 +1,6 @@
 import express from 'express';
 import { addExpenseController, approveExpenseController, getUserExpensesController, getExpenseByIdController } from '../controllers/expense.controller';
-import { customDateExpenseSummaryController, monthlyExpenseSummaryController } from '../controllers/expenseSummary.controller';
+import { customDateExpenseSummaryController, monthlyExpenseSummaryController, monthlyInsightController } from '../controllers/expenseSummary.controller';
 import { authenticateToken, isGroupAdmin } from '../middlewares/auth.middleware';
 import multer from 'multer';
 
@@ -241,6 +241,57 @@ router.get('/summary', authenticateToken, customDateExpenseSummaryController);
  *         description: Internal server error
  */
 router.get('/monthly-summary', authenticateToken, monthlyExpenseSummaryController);
+
+/**
+ * @swagger
+ * /expense/monthly-insight:
+ *   get:
+ *     summary: Get monthly expense insights
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: groupId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Group ID for the insights
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         required: true
+ *         description: Date (any day in the month) for which to get insights
+ *     responses:
+ *       200:
+ *         description: Monthly insights retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 summary:
+ *                   type: string
+ *                   description: Overall summary of the month's spending
+ *                 topCategories:
+ *                   type: string
+ *                   description: Analysis of the highest spending categories
+ *                 savingOpportunities:
+ *                   type: string
+ *                   description: Areas where spending could be reduced
+ *                 tips:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   description: Actionable tips for better financial management
+ *       400:
+ *         description: Group ID and date are required
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/monthly-insight', authenticateToken, monthlyInsightController);
 
 /**
  * @swagger

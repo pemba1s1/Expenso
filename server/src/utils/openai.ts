@@ -5,11 +5,33 @@ import { ExpenseItemWithoutId, ExtendedExpenseCategory } from '../types/types';
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
     apiKey: config.OPENROUTER_API_KEY,
+    // baseURL: 'https://ollama.rukh.me/v1',
+    // apiKey: 'ollama',
     defaultHeaders: {
         'HTTP-Referer': 'https://expen.so', // Optional. Site URL for rankings on openrouter.ai.
         'X-Title': 'Expenso', // Optional. Site title for rankings on openrouter.ai.
     },
 });
+
+async function imageUrlToBase64(imageUrl: string): Promise<string | null> {
+    try {
+        const response = await fetch(imageUrl);
+
+        if (!response.ok) {
+            console.error(`Error fetching image from ${imageUrl}: ${response.statusText}`);
+            return null; // Or throw an error if you prefer
+        }
+
+        const buffer = await response.arrayBuffer(); // Get the raw binary data
+        const base64String = Buffer.from(buffer).toString('base64');
+        return base64String;
+    } catch (error) {
+        console.error(`Error converting image to Base64: ${error}`);
+        return null; // Handle errors gracefully
+    }
+}
+
+
 
 /**
  * Generates insights about monthly expenses based on provided data
@@ -31,9 +53,9 @@ export const generateMonthlyExpenseInsights = async (
             'January', 'February', 'March', 'April', 'May', 'June',
             'July', 'August', 'September', 'October', 'November', 'December'
         ];
-        
+
         const monthName = monthNames[month - 1];
-        
+
         const categoryList = [
             'Groceries',
             'Rent',
@@ -44,16 +66,16 @@ export const generateMonthlyExpenseInsights = async (
             'Misc',
             'Others'
         ];
-        
+
         const prompt = `
             You are a financial advisor analyzing expense data for ${monthName} ${year}.
             
             Here is the expense data:
             - Total expenses: $${expenseData.totalAmount.toFixed(2)}
             - Breakdown by category:
-            ${expenseData.totalAmountPerCategory.map(cat => 
-                `  * ${cat.name}: $${cat.amount.toFixed(2)} (${((cat.amount / expenseData.totalAmount) * 100).toFixed(2)}%)`
-            ).join('\n')}
+            ${expenseData.totalAmountPerCategory.map(cat =>
+            `  * ${cat.name}: $${cat.amount.toFixed(2)} (${((cat.amount / expenseData.totalAmount) * 100).toFixed(2)}%)`
+        ).join('\n')}
             
             Based on this data, provide the following insights:
             1. A summary of the spending pattern for ${monthName} ${year}
@@ -71,7 +93,7 @@ export const generateMonthlyExpenseInsights = async (
         `;
 
         const response = await openai.chat.completions.create({
-            model: 'anthropic/claude-3-opus',
+            model: 'google/gemini-2.5-pro-exp-03-25:free',
             messages: [
                 {
                     role: 'system',
@@ -85,7 +107,7 @@ export const generateMonthlyExpenseInsights = async (
             response_format: { type: 'json_object' }
         });
 
-        const insights = JSON.parse(response.choices[0].message.content || '{}');
+        const insights = JSON.parse(response.choices[0]?.message?.content || '{}');
         return insights;
     } catch (error) {
         console.error('Error generating expense insights:', error);
@@ -117,8 +139,9 @@ export const getReceiptData = async (receiptImage: string) => {
             Instructions:
             1. Identify each item on the receipt and its corresponding price
             2. Categorize each item into one of the following categories: ${categoryList.join(', ')}
-            3. Calculate the total amount from all items
-            4. Return ONLY a JSON object with the following structure, nothing else:
+            3. If item name contains numbers and alphabets, only use the alphabets
+            4. Fetch the total tax amount if available, otherwise set it to 0.00
+            5. Return ONLY a JSON object with the following structure, nothing else:
             
             {
                 "items": [
@@ -129,7 +152,7 @@ export const getReceiptData = async (receiptImage: string) => {
                     },
                     ...
                 ],
-                "total": 123.45
+                "tax": 0.00,
             }
             
             Important:
@@ -139,8 +162,11 @@ export const getReceiptData = async (receiptImage: string) => {
             - Ensure the JSON is valid and properly formatted
         `;
 
+
+        // console.log(await imageUrlToBase64(receiptImage));
+
         const response = await openai.chat.completions.create({
-            model: 'anthropic/claude-3-opus',
+            model: 'google/gemini-2.5-pro-exp-03-25:free',
             messages: [
                 {
                     role: 'system',
@@ -156,6 +182,7 @@ export const getReceiptData = async (receiptImage: string) => {
                         {
                             type: 'image_url',
                             image_url: {
+                                // url: `data:image/png;base64,${await imageUrlToBase64(receiptImage)}`
                                 url: receiptImage
                             }
                         }
@@ -164,18 +191,19 @@ export const getReceiptData = async (receiptImage: string) => {
             ],
             response_format: { type: 'json_object' }
         });
+        console.log(response);
 
         const extractedData = JSON.parse(response.choices[0].message.content || '{}');
-        
+
         // Process the extracted data to match the expected format
         const items: ExpenseItemWithoutId[] = extractedData.items.map((item: any) => ({
             name: item.name,
             amount: item.price
         }));
-        
+
         // Group items by category
         const categorizedItems: Record<string, ExtendedExpenseCategory> = {};
-        
+
         extractedData.items.forEach((item: any) => {
             if (!categorizedItems[item.category]) {
                 categorizedItems[item.category] = {
@@ -184,17 +212,17 @@ export const getReceiptData = async (receiptImage: string) => {
                     items: []
                 };
             }
-            
+
             categorizedItems[item.category].items.push({
                 name: item.name,
                 amount: item.price
             });
-            
+
             categorizedItems[item.category].amount += item.price;
         });
-        
+
         const details: ExtendedExpenseCategory[] = Object.values(categorizedItems);
-        
+
         return {
             amount: extractedData.total,
             details,
@@ -205,3 +233,5 @@ export const getReceiptData = async (receiptImage: string) => {
         throw new Error('Failed to extract data from receipt image');
     }
 };
+
+

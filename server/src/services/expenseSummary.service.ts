@@ -95,7 +95,7 @@ export const getMonthlyInsight = async (groupId: string, date: Date): Promise<Mo
   
   try {
     // Check if insight already exists for this month and group
-    const existingInsight = await prisma.Insight.findFirst({
+    const existingInsight = await prisma.insight.findFirst({
       where: {
         groupId,
         date: {
@@ -130,7 +130,7 @@ export const getMonthlyInsight = async (groupId: string, date: Date): Promise<Mo
     );
 
     // Save the insight to the database
-    await prisma.Insight.create({
+    await prisma.insight.create({
       data: {
         date: monthStart,
         groupId,

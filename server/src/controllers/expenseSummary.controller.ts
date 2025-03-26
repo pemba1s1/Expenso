@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
-import { getExpenseSummaryForCustomDateRange, getMonthlyExpenseSummary } from '../services/expenseSummary.service';
+import {
+  getExpenseSummaryForCustomDateRange,
+  getMonthlyExpenseSummary,
+  getMonthlyInsight
+} from '../services/expenseSummary.service';
 import { User } from '@prisma/client';
 
 export const customDateExpenseSummaryController = async (req: Request, res: Response) => {
@@ -32,5 +36,21 @@ export const monthlyExpenseSummaryController = async (req: Request, res: Respons
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ error: errorMessage });
   }
+}
 
+export const monthlyInsightController = async (req: Request, res: Response) => {
+  const { groupId, year, month } = req.query;
+
+  if (!groupId || !year || !month) {
+    res.status(400).json({ error: 'Group ID, year, and month are required' });
+    return;
+  }
+
+  try {
+    const insight = await getMonthlyInsight(groupId as string, new Date(Number(year), Number(month) - 1));
+    res.status(200).json(insight);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({ error: errorMessage });
+  }
 }

@@ -4,15 +4,15 @@ import { ExtendedExpenseCategory } from '../types/types';
 
 interface ExpenseDetails {
   expense: {
-    userId: string, 
-    groupId: string, 
-    amount: number, 
+    userId: string,
+    groupId: string,
+    amount: number,
     receiptImageUrl: string
-  }, 
+  },
   expenseCategory: Array<ExtendedExpenseCategory>
 }
 
-export const createExpense = async ({ expense : { userId, groupId, amount, receiptImageUrl }, expenseCategory }: ExpenseDetails) => {
+export const createExpense = async ({ expense: { userId, groupId, amount, receiptImageUrl }, expenseCategory }: ExpenseDetails) => {
   try {
     let status: 'pending' | 'approved' | 'rejected' | undefined = undefined;
 
@@ -82,15 +82,21 @@ export const approveExpense = async (expenseId: string, adminId: string) => {
   }
 };
 
-export const getUserExpenses = async (userId: string, groupId?: string) => {
+export const getUserExpenses = async (userId: string, date: Date, groupId?: string) => {
   try {
+    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
     const expenses = await prisma.expense.findMany({
       where: {
         userId,
         ...(groupId && { groupId }),
+        createdAt: {
+          gte: startOfMonth,
+          lte: endOfMonth,
+        },
       }
     });
-
     return expenses;
   } catch (error) {
     throw new Error('Failed to fetch user expenses');

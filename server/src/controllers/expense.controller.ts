@@ -54,7 +54,8 @@ export const approveExpenseController = async (req: Request, res: Response) => {
 
 export const getUserExpensesController = async (req: Request, res: Response) => {
   const user: User = req.user as User;
-  const { groupId } = req.query;
+  const { groupId, month, year } = req.query;
+  const date = new Date(`${year}-${month}-01`);
 
   if (!user.id) {
     res.status(400).json({ error: 'User ID is missing' });
@@ -62,7 +63,7 @@ export const getUserExpensesController = async (req: Request, res: Response) => 
   }
 
   try {
-    const expenses = await getUserExpenses(user.id, groupId as string);
+    const expenses = await getUserExpenses(user.id, date, groupId as string);
     res.status(200).json(expenses);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
