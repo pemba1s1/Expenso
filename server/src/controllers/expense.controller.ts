@@ -95,7 +95,7 @@ export const addExpenseFromReceiptController = async (req: Request, res: Respons
         totalAmount: allExpensesFromReceipt.reduce((sum, expense) => sum + expense.amount, 0),
         taxAmount: receiptData.rawExtractedData.tax,
         receiptImageUrl: imageUrl,
-      });
+      });3
 
       if (!receipt) {
         throw new Error('Failed to create receipt');

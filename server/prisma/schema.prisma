@@ -30,7 +30,7 @@ model User {
   updatedAt                       DateTime              @updatedAt
   userGroups                      UserGroup[]
   invitations                     Invitation[]          @relation("adminInvitations")
-  Expense                         Expense[]
+  // Expense                         Expense[]
   categoryLimits                  UserCategoryLimit[]
   Receipt                         Receipt[]
 }
@@ -43,7 +43,7 @@ model Group {
   updatedAt   DateTime     @updatedAt
   userGroups  UserGroup[]
   invitations Invitation[]
-  Expense     Expense[]
+  // Expense     Expense[]
   insights    Insight[]
   Receipt     Receipt[]
 }
@@ -74,22 +74,22 @@ model Invitation {
 
 model Expense {
   id              String   @id @default(uuid())
-  userId          String
+  // userId          String
   categoryId      String
   amount          Float
   description     String?
   receiptImageUrl String?
-  groupId         String?
+  // groupId         String?
   status          String   @default("pending")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
+  // user            User     @relation(fields: [userId], references: [id])
   category        Category @relation(fields: [categoryId], references: [id])
-  group           Group?   @relation(fields: [groupId], references: [id])
+  // group           Group?   @relation(fields: [groupId], references: [id])
   Receipt         Receipt? @relation(fields: [receiptId], references: [id])
   receiptId       String?
 
-  @@index([userId])
+  // @@index([userId])
   @@index([categoryId])
 }
 
@@ -142,14 +142,15 @@ model StripePlan {
 }
 
 model Insight {
-  date          DateTime @id
-  groupId       String
-  summary       String
-  topCategories String
-  tips          String[]
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  group         Group    @relation(fields: [groupId], references: [id])
+  date                DateTime @id
+  groupId             String
+  summary             String
+  topCategories       String
+  savingOpportunities String
+  tips                String[]
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  group               Group    @relation(fields: [groupId], references: [id])
 }
 
 enum UserRole {
