@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { config } from '../config/env';
 import { ExpenseItemWithoutId, ExtendedExpenseCategory } from '../types/types';
+import { getAllCategories } from '../services/category.service';
 
 const openai = new OpenAI({
     baseURL: 'https://openrouter.ai/api/v1',
@@ -56,16 +57,7 @@ export const generateMonthlyExpenseInsights = async (
 
         const monthName = monthNames[month - 1];
 
-        const categoryList = [
-            'Groceries',
-            'Rent',
-            'Utilities',
-            'Entertainment',
-            'Savings',
-            'Transportation',
-            'Misc',
-            'Others'
-        ];
+        // const categoryList = await getAllCategories();
 
         const prompt = `
             You are a financial advisor analyzing expense data for ${monthName} ${year}.
@@ -115,6 +107,7 @@ export const generateMonthlyExpenseInsights = async (
     }
 };
 
+
 /**
  * Extracts data from a receipt image
  * @param receiptImage Base64 encoded image of the receipt
@@ -122,16 +115,7 @@ export const generateMonthlyExpenseInsights = async (
  */
 export const getReceiptData = async (receiptImage: string) => {
     try {
-        const categoryList = [
-            'Groceries',
-            'Rent',
-            'Utilities',
-            'Entertainment',
-            'Savings',
-            'Transportation',
-            'Misc',
-            'Others'
-        ];
+        const categoryList = await getAllCategories().then((categories) => categories.map((category) => category.name));
 
         const prompt = `
             You are a receipt analysis assistant. Your task is to extract all items and their prices from the provided receipt image.
@@ -166,7 +150,7 @@ export const getReceiptData = async (receiptImage: string) => {
         // console.log(await imageUrlToBase64(receiptImage));
 
         const response = await openai.chat.completions.create({
-            model: 'google/gemini-2.5-pro-exp-03-25:free',
+            model: 'google/gemini-pro-1.5',
             messages: [
                 {
                     role: 'system',
@@ -193,7 +177,7 @@ export const getReceiptData = async (receiptImage: string) => {
         });
         console.log(response);
 
-        const extractedData = JSON.parse(response.choices[0].message.content || '{}');
+        const extractedData = JSON.parse(response.choices[0]?.message?.content || '{}');
 
         // Process the extracted data to match the expected format
         const items: ExpenseItemWithoutId[] = extractedData.items.map((item: any) => ({

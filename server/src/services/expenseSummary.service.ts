@@ -8,7 +8,6 @@ interface ExpenseSummary {
 }
 
 const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: string): Promise<ExpenseSummary> => {
-
   try {
     const expenses = await prisma.expense.findMany({
       where: {
@@ -24,17 +23,15 @@ const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: strin
         createdAt: true,
         userId: true,
         groupId: true,
-        details: {
+        category: {
           select: {
-            categoryId: true,
-            amount: true,
-            category: {
-              select: {
-                name: true,
-              },
-            },
+            id: true,
+            name: true,
           },
         },
+        description: true,
+        receiptImageUrl: true,
+        status: true,
       },
     });
 
@@ -43,12 +40,13 @@ const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: strin
     const totalAmountPerCategory: Record<string, { name: string, amount: number }> = {};
 
     expenses.forEach(expense => {
-      expense.details.forEach(category => {
-        if (!totalAmountPerCategory[category.categoryId]) {
-          totalAmountPerCategory[category.categoryId] = { name: category.category.name, amount: 0 };
+      if (expense.category) {
+        const categoryId = expense.category.id;
+        if (!totalAmountPerCategory[categoryId]) {
+          totalAmountPerCategory[categoryId] = { name: expense.category.name, amount: 0 };
         }
-        totalAmountPerCategory[category.categoryId].amount += category.amount;
-      });
+        totalAmountPerCategory[categoryId].amount += expense.amount;
+      }
     });
 
     return {
@@ -56,23 +54,26 @@ const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: strin
       totalAmountPerCategory: Object.values(totalAmountPerCategory),
     };
   } catch (error) {
+    console.error('Error getting expense summary:', error);
     throw new Error('Failed to generate expense summary');
   }
 };
 
-export const getExpenseSummaryForCustomDateRange = async (startDate: Date, endDate: Date, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
-  if (userRole === UserRole.BASIC) {
-    throw new Error('Basic users cannot access custom date summaries');
+export const getMonthlyExpenseSummary = async (startDate: Date, endDate: Date, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
+  try {
+    if (startDate > endDate) {
+      throw new Error('Start date cannot be after end date');
+    }
+
+    if (userRole === UserRole.BASIC) {
+      throw new Error('Basic users cannot access custom date summaries');
+    }
+    
+    return getExpenseSummary(startDate, endDate, groupId);
   }
-
-  return getExpenseSummary(startDate, endDate, groupId);
-}
-
-export const getMonthlyExpenseSummary = async (year: number, month: number, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
-  const startDate = new Date(year, month - 1, 1);
-  const endDate = new Date(year, month, 0);
-
-  return getExpenseSummary(startDate, endDate, groupId);
+  catch (error) {
+    throw error;
+  }
 }
 
 export interface MonthlyInsight {

@@ -15,17 +15,30 @@ export interface ExpenseCategory {
   items: ExpenseItem[]
 }
 
+export interface Receipt {
+  id: string
+  totalAmount: number
+  taxAmount: number
+  receiptImageUrl?: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Expense {
   id: string
   createdAt: string
   updatedAt: string
   amount: number
-  details: ExpenseCategory[]
+  description?: string
   userId: string
-  receiptImage: string
+  receiptImageUrl?: string
   status: string | null
-  approvedBy: string | null
   groupId: string | null
+  Receipt?: Receipt
+  category: {
+    id: string
+    name: string
+  }
 }
 
 export interface ExpenseSummary {
@@ -57,6 +70,24 @@ export const useApproveExpense = () => {
       const response = await axiosInstance.post<Expense>('/expense/approve', { expenseId })
       return response.data
     },
+  })
+}
+
+// Get user expenses for a month
+export const useUserExpenses = (date: Date, groupId?: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['userExpenses', date.toISOString(), groupId],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (groupId) {
+        params.append('groupId', groupId)
+      }
+      params.append('date', date.toISOString())
+      
+      const response = await axiosInstance.get<Expense[]>(`/expense/user?${params.toString()}`)
+      return response.data
+    },
+    enabled,
   })
 }
 

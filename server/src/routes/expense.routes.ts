@@ -1,6 +1,6 @@
 import express from 'express';
-import { addExpenseController, approveExpenseController, getUserExpensesController, getExpenseByIdController } from '../controllers/expense.controller';
-import { customDateExpenseSummaryController, monthlyExpenseSummaryController, monthlyInsightController } from '../controllers/expenseSummary.controller';
+import { addExpenseFromReceiptController, approveExpenseController, getUserExpensesController, getExpenseByIdController, addIndividualExpenseController } from '../controllers/expense.controller';
+import { monthlyExpenseSummaryController, monthlyInsightController } from '../controllers/expenseSummary.controller';
 import { authenticateToken, isGroupAdmin } from '../middlewares/auth.middleware';
 import multer from 'multer';
 
@@ -14,6 +14,73 @@ const upload = multer({ storage: storage });
  *   name: Expenses
  *   description: Expense management
  */
+
+
+/**
+ * @swagger
+ * /expense:
+ *   post:
+ *     summary: Add a new individual expense
+ *     tags: [Expenses]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 description: Provide the amount of the expense
+ *               details:
+ *                 type: object
+ *                 description: Provide details of the expense
+ *               groupId:
+ *                 type: string
+ *                 nullable: true
+ *                 description: Provide the group ID if the expense is for a group
+ *     responses:
+ *       201:
+ *         description: Expense added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 createdAt:
+ *                   type: string
+ *                   format: date-time
+ *                 updatedAt:
+ *                   type: string
+ *                   format: date-time
+ *                 amount:
+ *                   type: number
+ *                 details:
+ *                   type: object
+ *                 userId:
+ *                   type: string
+ *                 receiptImage:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                   nullable: true
+ *                 approvedBy:
+ *                   type: string
+ *                   nullable: true
+ *                 groupId:
+ *                   type: string
+ *                   nullable: true
+ *       400:
+ *         description: User ID is missing or no receipt image provided
+ *       500:
+ *         description: Internal server error
+ */
+router.post('/', authenticateToken, upload.single('receiptImage'), addIndividualExpenseController);
+
 
 /**
  * @swagger
@@ -75,7 +142,7 @@ const upload = multer({ storage: storage });
  *       500:
  *         description: Internal server error
  */
-router.post('/', authenticateToken, upload.single('receiptImage'), addExpenseController);
+router.post('/receipt', authenticateToken, upload.single('receiptImage'), addExpenseFromReceiptController);
 
 /**
  * @swagger
@@ -187,60 +254,8 @@ router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseControlle
  *       500:
  *         description: Internal server error
  */
-router.get('/summary', authenticateToken, customDateExpenseSummaryController);
+router.get('/summary', authenticateToken, monthlyExpenseSummaryController);
 
-/**
- * @swagger
- * /expense/summary:
- *   get:
- *     summary: Get monthly expense summary
- *     tags: [Expenses]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: year
- *         schema:
- *           type: string
- *         required: true
- *         description: Year for the summary
- *       - in: query
- *         name: month
- *         schema:
- *           type: string
- *         required: true
- *         description: Month for the summary
- *       - in: query
- *         name: groupId
- *         schema:
- *           type: string
- *           nullable: true
- *         description: Group ID for the summary
- *     responses:
- *       200:
- *         description: Expense summary retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 totalAmount:
- *                   type: number
- *                 totalAmountPerCategory:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       name:
- *                         type: string
- *                       amount:
- *                         type: number
- *       400:
- *         description: Start date and end date are required
- *       500:
- *         description: Internal server error
- */
-router.get('/monthly-summary', authenticateToken, monthlyExpenseSummaryController);
 
 /**
  * @swagger

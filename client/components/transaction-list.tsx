@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Search, FileText, Filter } from "lucide-react"
+import { Search, FileText, Filter, ChevronDown, ChevronRight } from "lucide-react"
+import { useUserExpenses, type Expense, type Receipt } from "@/hooks/api/useExpense"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,81 +11,22 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 
-// Sample transaction data
-const transactions = [
-  {
-    id: 1,
-    date: "2025-04-15",
-    description: "Grocery Store",
-    category: "Groceries",
-    amount: 78.35,
-    hasReceipt: true,
-  },
-  {
-    id: 2,
-    date: "2025-04-14",
-    description: "Monthly Rent",
-    category: "Rent",
-    amount: 1200.0,
-    hasReceipt: false,
-  },
-  {
-    id: 3,
-    date: "2025-04-13",
-    description: "Electric Bill",
-    category: "Utilities",
-    amount: 95.4,
-    hasReceipt: true,
-  },
-  {
-    id: 4,
-    date: "2025-04-10",
-    description: "Movie Tickets",
-    category: "Entertainment",
-    amount: 32.5,
-    hasReceipt: false,
-  },
-  {
-    id: 5,
-    date: "2025-04-08",
-    description: "Gas Station",
-    category: "Transportation",
-    amount: 45.75,
-    hasReceipt: true,
-  },
-  {
-    id: 6,
-    date: "2025-04-05",
-    description: "Internet Bill",
-    category: "Utilities",
-    amount: 79.99,
-    hasReceipt: false,
-  },
-  {
-    id: 7,
-    date: "2025-04-03",
-    description: "Restaurant Dinner",
-    category: "Entertainment",
-    amount: 68.2,
-    hasReceipt: true,
-  },
-  {
-    id: 8,
-    date: "2025-04-01",
-    description: "Savings Transfer",
-    category: "Savings",
-    amount: 400.0,
-    hasReceipt: false,
-  },
-]
+interface ExpandedReceipts {
+  [key: string]: boolean
+}
 
 export function TransactionList() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [sortBy, setSortBy] = useState("date")
   const [sortOrder, setSortOrder] = useState("desc")
+  const [expandedReceipts, setExpandedReceipts] = useState<ExpandedReceipts>({})
 
-  const categories = [...new Set(transactions.map((t) => t.category))]
+  // Get current date for the month's expenses
+  const currentDate = new Date()
+  const { data: expenses = [] } = useUserExpenses(currentDate)
+
+  const categories = [...new Set(expenses.map((e) => e.category.name))]
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories((prev) =>
@@ -92,24 +34,51 @@ export function TransactionList() {
     )
   }
 
-  const filteredTransactions = transactions
-    .filter(
-      (transaction) =>
-        (searchTerm === "" ||
-          transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          transaction.category.toLowerCase().includes(searchTerm.toLowerCase())) &&
-        (selectedCategories.length === 0 || selectedCategories.includes(transaction.category)),
-    )
-    .sort((a, b) => {
-      if (sortBy === "date") {
-        return sortOrder === "asc"
-          ? new Date(a.date).getTime() - new Date(b.date).getTime()
-          : new Date(b.date).getTime() - new Date(a.date).getTime()
-      } else if (sortBy === "amount") {
-        return sortOrder === "asc" ? a.amount - b.amount : b.amount - a.amount
+  // Group expenses by receipt
+  const groupedExpenses = expenses.reduce((acc, expense) => {
+    if (expense.Receipt) {
+      if (!acc[expense.Receipt.id]) {
+        acc[expense.Receipt.id] = {
+          receipt: expense.Receipt,
+          expenses: []
+        }
       }
-      return 0
+      acc[expense.Receipt.id].expenses.push(expense)
+    } else {
+      if (!acc['individual']) {
+        acc['individual'] = {
+          receipt: null,
+          expenses: []
+        }
+      }
+      acc['individual'].expenses.push(expense)
+    }
+    return acc
+  }, {} as Record<string, { receipt: Receipt | null, expenses: Expense[] }>)
+
+  // Filter and sort expenses
+  const filteredGroups = Object.entries(groupedExpenses)
+    .filter(([, group]) =>
+      group.expenses.some(
+        (expense) =>
+          (searchTerm === "" ||
+            expense.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            expense.category.name.toLowerCase().includes(searchTerm.toLowerCase())) &&
+          (selectedCategories.length === 0 || selectedCategories.includes(expense.category.name))
+      )
+    )
+    .sort(([, a], [, b]) => {
+      const aDate = new Date(a.expenses[0].createdAt).getTime()
+      const bDate = new Date(b.expenses[0].createdAt).getTime()
+      return sortOrder === "asc" ? aDate - bDate : bDate - aDate
     })
+
+  const toggleReceipt = (receiptId: string) => {
+    setExpandedReceipts(prev => ({
+      ...prev,
+      [receiptId]: !prev[receiptId]
+    }))
+  }
 
   return (
     <div className="space-y-4">
@@ -174,6 +143,7 @@ export function TransactionList() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead></TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Category</TableHead>
@@ -182,21 +152,67 @@ export function TransactionList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell>{transaction.date}</TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>{transaction.category}</TableCell>
-                <TableCell className="text-right">${transaction.amount.toFixed(2)}</TableCell>
-                <TableCell>
-                  {transaction.hasReceipt && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <FileText className="h-4 w-4" />
-                      <span className="sr-only">View receipt</span>
-                    </Button>
-                  )}
-                </TableCell>
-              </TableRow>
+            {filteredGroups.map(([groupId, group]) => (
+              <>
+                {group.receipt ? (
+                  // Receipt group header
+                  <TableRow key={groupId} className="bg-muted/50">
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => toggleReceipt(groupId)}
+                      >
+                        {expandedReceipts[groupId] ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TableCell>
+                    <TableCell>{new Date(group.receipt.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell colSpan={2}>
+                      Receipt Total: ${group.receipt.totalAmount.toFixed(2)}
+                      {group.receipt.taxAmount > 0 && (
+                        <span className="ml-2 text-muted-foreground">
+                          (Tax: ${group.receipt.taxAmount.toFixed(2)})
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      ${(group.receipt.totalAmount + group.receipt.taxAmount).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {group.receipt.receiptImageUrl && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <FileText className="h-4 w-4" />
+                          <span className="sr-only">View receipt</span>
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+                {/* Individual expenses */}
+                {(expandedReceipts[groupId] || !group.receipt) &&
+                  group.expenses.map((expense) => (
+                    <TableRow key={expense.id} className={group.receipt ? "bg-muted/20" : ""}>
+                      <TableCell></TableCell>
+                      <TableCell>{new Date(expense.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{expense.description}</TableCell>
+                      <TableCell>{expense.category.name}</TableCell>
+                      <TableCell className="text-right">${expense.amount.toFixed(2)}</TableCell>
+                      <TableCell>
+                        {!group.receipt && expense.receiptImageUrl && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <FileText className="h-4 w-4" />
+                            <span className="sr-only">View receipt</span>
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </>
             ))}
           </TableBody>
         </Table>
@@ -204,4 +220,3 @@ export function TransactionList() {
     </div>
   )
 }
-

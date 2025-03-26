@@ -1,18 +1,33 @@
-import { GroupType } from '@prisma/client';
+import { GroupType, Receipt } from '@prisma/client';
 import prisma from '../config/prismaClient';
-import { ExtendedExpenseCategory } from '../types/types';
+import { logger } from '../utils/logger';
 
 interface ExpenseDetails {
-  expense: {
-    userId: string,
-    groupId: string,
-    amount: number,
-    receiptImageUrl: string
-  },
-  expenseCategory: Array<ExtendedExpenseCategory>
+  userId: string,
+  groupId: string,
+  amount: string,
+  receiptImageUrl?: string,
+  categoryId: string,
+  description?: string,
 }
 
-export const createExpense = async ({ expense: { userId, groupId, amount, receiptImageUrl }, expenseCategory }: ExpenseDetails) => {
+interface ReceiptDetails {
+  groupId: string,
+  expensesIds: string[],
+  userId: string,
+  totalAmount: number,
+  taxAmount: number,
+  receiptImageUrl: string,
+}
+
+export const createExpense = async ({
+  userId,
+  groupId,
+  amount,
+  receiptImageUrl,
+  categoryId,
+  description,
+}: ExpenseDetails) => {
   try {
     let status: 'pending' | 'approved' | 'rejected' | undefined = undefined;
 
@@ -29,36 +44,19 @@ export const createExpense = async ({ expense: { userId, groupId, amount, receip
       if (group.type === GroupType.BUSINESS) status = 'pending';
     }
 
+    const totalAmount = parseFloat(amount);
     const expense = await prisma.$transaction(async (prisma) => {
       const createdExpense = await prisma.expense.create({
         data: {
           userId,
           groupId,
-          amount,
+          categoryId,
+          amount: totalAmount,
           receiptImageUrl,
           status,
-        },
-      });
-
-      for (const category of expenseCategory) {
-        const createdCategory = await prisma.expenseCategory.create({
-          data: {
-            amount: category.amount,
-            expenseId: createdExpense.id,
-            categoryId: category.categoryId,
-          },
-        });
-
-        for (const item of category.items) {
-          await prisma.expenseItem.create({
-            data: {
-              name: item.name,
-              amount: item.amount,
-              expenseCategoryId: createdCategory.id,
-            },
-          });
+          description,
         }
-      }
+      });
 
       return createdExpense;
     });
@@ -69,11 +67,46 @@ export const createExpense = async ({ expense: { userId, groupId, amount, receip
   }
 };
 
+export const createReceipt = async ({ groupId, expensesIds, userId, totalAmount, taxAmount, receiptImageUrl }: ReceiptDetails) => {
+  try {
+    const receipt = await prisma.receipt.create({
+      data: {
+        userId,
+        groupId,
+        expenses: {
+          connect: expensesIds.map(id => ({ id })),
+        },
+        totalAmount,
+        taxAmount,
+        receiptImageUrl,
+      },
+    });
+
+    return receipt;
+  } catch (error) {
+    logger.error('Failed to create receipt:', error);
+    throw new Error('Failed to create receipt');
+  }
+};
+
+export const deleteExpense = async (userId: string, expenseId: string) => {
+  try {
+    const expense = await prisma.expense.delete({
+      where: { userId, id: expenseId },
+    });
+
+    return expense;
+  }
+  catch (error) {
+    throw new Error('Failed to delete expense');
+  }
+};
+
 export const approveExpense = async (expenseId: string, adminId: string) => {
   try {
     const expense = await prisma.expense.update({
       where: { id: expenseId, status: 'pending' },
-      data: { status: 'approved', approvedBy: adminId },
+      data: { status: 'approved' },
     });
 
     return expense;
@@ -82,21 +115,31 @@ export const approveExpense = async (expenseId: string, adminId: string) => {
   }
 };
 
-export const getUserExpenses = async (userId: string, date: Date, groupId?: string) => {
+export const getUserExpenses = async (userId: string, startDate: Date, endDate: Date, groupId?: string) => {
   try {
-    const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-    const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-
     const expenses = await prisma.expense.findMany({
       where: {
         userId,
         ...(groupId && { groupId }),
         createdAt: {
-          gte: startOfMonth,
-          lte: endOfMonth,
+          gte: startDate,
+          lte: endDate,
         },
+      },
+      include: {
+        Receipt: true,
+        category: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
     });
+    console.log(expenses);
     return expenses;
   } catch (error) {
     throw new Error('Failed to fetch user expenses');
@@ -118,4 +161,3 @@ export const getExpenseById = async (userId: string, expenseId: string) => {
     throw new Error('Failed to fetch expense');
   }
 };
-

@@ -32,7 +32,6 @@ model User {
   invitations                     Invitation[]          @relation("adminInvitations")
   Expense                         Expense[]
   categoryLimits                  UserCategoryLimit[]
-  Receipt                         Receipt[]
 }
 
 model Group {
@@ -45,7 +44,6 @@ model Group {
   invitations Invitation[]
   Expense     Expense[]
   insights    Insight[]
-  Receipt     Receipt[]
 }
 
 model UserGroup {
@@ -73,46 +71,49 @@ model Invitation {
 }
 
 model Expense {
-  id              String   @id @default(uuid())
+  id              String            @id @default(uuid())
   userId          String
-  categoryId      String
+  groupId         String?
   amount          Float
-  description     String?
   receiptImageUrl String?
-  groupId         String?
-  status          String   @default("pending")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id])
-  category        Category @relation(fields: [categoryId], references: [id])
-  group           Group?   @relation(fields: [groupId], references: [id])
-  Receipt         Receipt? @relation(fields: [receiptId], references: [id])
-  receiptId       String?
-
-  @@index([userId])
-  @@index([categoryId])
-}
-
-model Receipt {
-  id              String    @id @default(uuid())
-  userId          String
-  groupId         String?
-  totalAmount     Float // Total before tax
-  taxAmount       Float // Total tax for the receipt
-  // TODO: fix Expense[] not writing to the database
-  expenses        Expense[]
-  receiptImageUrl String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id])
-  group           Group?    @relation(fields: [groupId], references: [id])
+  details         ExpenseCategory[]
+  status          String?
+  approvedBy      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id])
+  group           Group?            @relation(fields: [groupId], references: [id])
 }
 
 model Category {
-  id         String              @id @default(uuid())
-  name       String              @unique
-  expenses   Expense[]
-  userLimits UserCategoryLimit[]
+  id              String              @id @default(uuid())
+  name            String              @unique
+  expenseCategory ExpenseCategory[]
+  userLimits      UserCategoryLimit[]
+}
+
+model ExpenseCategory {
+  id         String        @id @default(uuid())
+  amount     Float
+  items      ExpenseItem[]
+  categoryId String
+  expenseId  String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  category   Category      @relation(fields: [categoryId], references: [id])
+  expense    Expense       @relation(fields: [expenseId], references: [id])
+
+  @@unique([categoryId, expenseId])
+}
+
+model ExpenseItem {
+  id                String          @id @default(uuid())
+  name              String
+  amount            Float
+  expenseCategoryId String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  expenseCategory   ExpenseCategory @relation(fields: [expenseCategoryId], references: [id])
 }
 
 model UserCategoryLimit {
@@ -178,3 +179,4 @@ enum StripePlanName {
   BUSINESS_PREMIUM_SEMI_ANNUALLY
   BUSINESS_PREMIUM_ANNUALLY
 }
+
