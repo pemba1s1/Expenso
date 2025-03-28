@@ -28,3 +28,11 @@ export function getMonthStartEndDates(year: string, month: string): { startDate:
     const endDate = new Date(Number(year), monthIndex + 1, 0);
     return { startDate, endDate };
 }
+
+export function getMonthName(date: Date): string {
+    const months = [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+    return months[date.getMonth()];
+}

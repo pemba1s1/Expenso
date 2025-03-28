@@ -74,18 +74,13 @@ model Invitation {
 
 model Expense {
   id              String   @id @default(uuid())
-  // userId          String
   categoryId      String
   amount          Float
   description     String?
-  receiptImageUrl String?
-  // groupId         String?
   status          String   @default("pending")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  // user            User     @relation(fields: [userId], references: [id])
   category        Category @relation(fields: [categoryId], references: [id])
-  // group           Group?   @relation(fields: [groupId], references: [id])
   Receipt         Receipt? @relation(fields: [receiptId], references: [id])
   receiptId       String?
 
@@ -99,7 +94,6 @@ model Receipt {
   groupId         String?
   totalAmount     Float // Total before tax
   taxAmount       Float // Total tax for the receipt
-  // TODO: fix Expense[] not writing to the database
   expenses        Expense[]
   receiptImageUrl String?
   createdAt       DateTime  @default(now())

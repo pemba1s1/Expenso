@@ -1,34 +1,38 @@
 
 import prisma from './src/config/prismaClient';
+import { logger } from './src/utils/logger';
 
-const categories = [
-  'Groceries',
-  'Electronics',
-  'Clothing',
-  'Home Goods',
-  'Health & Beauty',
-  'Toys',
-  'Books',
-  'Sports Equipment',
-  'Automotive',
-  'Garden Supplies'
+export const defaultCategories = [
+  "Housing",
+  "Transportation",
+  "Food",
+  "Utilities",
+  "Insurance",
+  "Healthcare",
+  "Debt Payments",
+  "Personal Spending",
+  "Entertainment",
+  "Subscriptions/Memberships",
+  "Gifts/Donations",
+  "Savings/Investments",
+  "Miscellaneous"
 ];
 
-console.log("Migrating categories");
-
-const createCategories = async () => {
-  for (const category of categories) {
-    await prisma.category.create({
-      data: {
-        name: category,
-      },
-    });
+export const migrateCategories = async () => {
+  logger.info("Migrating categories...");
+  
+  try {
+    for (const categoryName of defaultCategories) {
+      await prisma.category.upsert({
+        where: { name: categoryName },
+        update: {}, // No updates needed if exists
+        create: { name: categoryName },
+      });
+    }
+    logger.info("✅ Categories migrated successfully");
+  } catch (error) {
+    logger.error("❌ Failed to migrate categories");
+    logger.error(error);
+    throw error; // Propagate error to server startup
   }
 };
-
-createCategories().then(() => {
-  console.log("Categories migrated successfully");
-}).catch((error) => {
-  console.error("Failed to migrate categories", error);
-});
-

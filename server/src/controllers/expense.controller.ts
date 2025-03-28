@@ -14,11 +14,8 @@ export interface ReceiptItem {
 
 export interface Expense {
   id: string;
-  userId: string;
-  groupId: string | null;
   amount: number;
   description: string | null;
-  receiptImageUrl: string | null;
   categoryId: string;
   status: string;
   createdAt: Date;
@@ -58,51 +55,47 @@ export const addExpenseFromReceiptController = async (req: Request, res: Respons
       return;
     }
 
-    // Create expenses and collect them
-    const allExpensesFromReceipt: Expense[] = [];
-    
     try {
-      // Add each item as a separate expense
-      for (const item of receiptData.rawExtractedData.items as ReceiptItem[]) {
-        if (!item.category) {
-          res.status(400).json({ error: 'Failed to extract category from receipt item' });
-          return;
-        }
+      // Calculate total amount from items
+      const totalAmount = receiptData.rawExtractedData.items.reduce(
+        (sum: number, item: ReceiptItem) => sum + item.price,
+        0
+      );
 
-        const category = await getCategoryByName(item.category) as { id: string };
-        const expense = await createExpense({
-          userId: user.id,
-          groupId,
-          amount: item.price.toString(),
-          receiptImageUrl: imageUrl,
-          categoryId: category.id,
-          description: item.name,
-        });
-        
-        allExpensesFromReceipt.push(expense);
-      }
-
-      // Validate we have expenses before creating receipt
-      if (allExpensesFromReceipt.length === 0) {
-        throw new Error('No expenses were created from the receipt');
-      }
-
-      // Create receipt only if we have successfully created all expenses
+      // Create receipt first
       const receipt = await createReceipt({
         userId: user.id,
         groupId,
-        expensesIds: allExpensesFromReceipt.map((expense: { id: string }) => expense.id),
-        totalAmount: allExpensesFromReceipt.reduce((sum, expense) => sum + expense.amount, 0),
+        totalAmount,
         taxAmount: receiptData.rawExtractedData.tax,
         receiptImageUrl: imageUrl,
-      });3
+      });
 
       if (!receipt) {
         throw new Error('Failed to create receipt');
       }
 
-      return res.status(200).json({ 
-        message: 'All expenses from the receipt added successfully',
+      // Create expenses with receipt ID
+      const allExpensesFromReceipt: Expense[] = [];
+
+      for (const item of receiptData.rawExtractedData.items as ReceiptItem[]) {
+        if (!item.category) {
+          throw new Error('Failed to extract category from receipt item');
+        }
+
+        const category = await getCategoryByName(item.category) as { id: string };
+        const expense = await createExpense({
+          amount: item.price.toString(),
+          categoryId: category.id,
+          description: item.name,
+          receiptId: receipt.id,
+        });
+
+        allExpensesFromReceipt.push(expense);
+      }
+
+      return res.status(200).json({
+        message: 'Receipt and expenses created successfully',
         expenseCount: allExpensesFromReceipt.length,
         receiptId: receipt.id
       });
@@ -128,20 +121,32 @@ export const addIndividualExpenseController = async (req: Request, res: Response
     return;
   }
 
-  let receiptImageUrl = "";
-  if (receiptImage) {
-    // save image to s3 and get image url
-    receiptImageUrl = await uploadImageToS3(receiptImage.buffer);
-  }
-
   try {
-    const expense = await createExpense({
+    // Get category ID first
+    const category = await getCategoryByName(categoryName) as { id: string };
+
+    // Create a receipt if there's a receipt image
+    let receiptId: string | undefined;
+    let imageUrl: string | undefined;
+    if (receiptImage) {
+      const imageUrl = await uploadImageToS3(receiptImage.buffer);
+    }
+    const receipt = await createReceipt({
       userId: user.id,
       groupId,
+      totalAmount: parseFloat(amount),
+      taxAmount: 0, // Individual expenses don't typically have tax info
+      receiptImageUrl: imageUrl ? imageUrl : '',
+    });
+    receiptId = receipt.id;
+
+
+    // Create the expense with optional receipt ID
+    const expense = await createExpense({
       amount: amount.toString(),
-      receiptImageUrl,
-      categoryId: await getCategoryByName(categoryName).then((category: { id: string }) => category.id),
+      categoryId: category.id,
       description,
+      receiptId,
     });
 
     res.status(201).json(expense);
@@ -167,7 +172,6 @@ export const approveExpenseController = async (req: Request, res: Response) => {
 
 export const deleteExpenseController = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const user: User = req.user as User;
 
   if (!id) {
     res.status(400).json({ error: 'Expense ID is missing' });
@@ -175,7 +179,7 @@ export const deleteExpenseController = async (req: Request, res: Response) => {
   }
 
   try {
-    const expense = await deleteExpense(user.id, id);
+    const expense = await deleteExpense(id);
     res.status(200).json(expense);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -184,24 +188,29 @@ export const deleteExpenseController = async (req: Request, res: Response) => {
 };
 
 export const getUserExpensesController = async (req: Request, res: Response) => {
-  const user: User = req.user as User;
   const { groupId, month, year } = req.query;
-  
+  const user: User = req.user as User;
+
   if (!month || !year) {
     res.status(400).json({ error: 'Month and year are required' });
     return;
   }
 
-  const {startDate, endDate} = getMonthStartEndDates(year as string, month as string);
-
   if (!user.id) {
-    res.status(400).json({ error: 'User ID is missing' });
+    res.status(401).json({ error: 'User not authenticated' });
     return;
   }
 
+  const { startDate, endDate } = getMonthStartEndDates(year as string, month as string);
+
   try {
-    const expenses = await getUserExpenses(user.id, startDate, endDate, groupId as string);
-    res.status(200).json(expenses);
+    const receipts = await getUserExpenses(
+      user.id,
+      startDate,
+      endDate,
+      groupId as string | undefined
+    );
+    res.status(200).json(receipts);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({ error: errorMessage });
@@ -210,7 +219,6 @@ export const getUserExpensesController = async (req: Request, res: Response) => 
 
 export const getExpenseByIdController = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const user: User = req.user as User;
 
   if (!id) {
     res.status(400).json({ error: 'Expense ID is missing' });
@@ -218,7 +226,7 @@ export const getExpenseByIdController = async (req: Request, res: Response) => {
   }
 
   try {
-    const expense = await getExpenseById(user.id, id);
+    const expense = await getExpenseById(id);
     res.status(200).json(expense);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

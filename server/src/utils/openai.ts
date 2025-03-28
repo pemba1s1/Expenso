@@ -46,17 +46,10 @@ export const generateMonthlyExpenseInsights = async (
         totalAmount: number;
         totalAmountPerCategory: Array<{ name: string; amount: number }>;
     },
-    month: number,
-    year: number
+    monthName: string,
+    year: string
 ) => {
     try {
-        const monthNames = [
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-
-        const monthName = monthNames[month - 1];
-
         // const categoryList = await getAllCategories();
 
         const prompt = `
@@ -85,7 +78,7 @@ export const generateMonthlyExpenseInsights = async (
         `;
 
         const response = await openai.chat.completions.create({
-            model: 'google/gemini-2.5-pro-exp-03-25:free',
+            model: 'openai/gpt-4o-mini',
             messages: [
                 {
                     role: 'system',
