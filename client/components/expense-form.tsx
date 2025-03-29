@@ -3,27 +3,58 @@
 import type React from "react"
 
 import { useState } from "react"
-import { CalendarIcon, Upload } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
+import { Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
+import { useAddExpense } from "@/hooks/api/useExpense"
+import { useGroupStore } from "@/stores/useGroupStore"
+import { useToast } from "@/hooks/use-toast"
+import { useCategories } from "@/hooks/api/useCategory"
 
 interface ExpenseFormProps {
   onClose: () => void
 }
 
 export function ExpenseForm({ onClose }: ExpenseFormProps) {
-  const [date, setDate] = useState<Date>()
+  const { toast } = useToast()
+  const { selectedGroup } = useGroupStore()
+  const { mutate: addExpense, isPending } = useAddExpense()
+  const { data: categories } = useCategories()
+  const queryClient = useQueryClient()
+
+  const [description, setDescription] = useState("")
+  const [category, setCategory] = useState("")
+  const [amount, setAmount] = useState("")
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Receipt image must be less than 5MB",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Please upload an image file",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setReceiptFile(file)
       const reader = new FileReader()
       reader.onload = (event) => {
         setReceiptPreview(event.target?.result as string)
@@ -32,51 +63,111 @@ export function ExpenseForm({ onClose }: ExpenseFormProps) {
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedGroup) {
+      toast({
+        title: "Error",
+        description: "Please select a group first",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!description || !category || !amount) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate amount
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid amount",
+        variant: "destructive",
+      })
+      return
+    }
+
+    addExpense(
+      {
+        amount,
+        description,
+        groupId: selectedGroup.id,
+        categoryName: category,
+        receiptImage: receiptFile || undefined,
+      },
+      {
+        onSuccess: () => {
+          // Invalidate relevant queries to trigger refetch
+          queryClient.invalidateQueries({ queryKey: ['userExpenses'] })
+          queryClient.invalidateQueries({ queryKey: ['monthlyExpenseSummary'] })
+          queryClient.invalidateQueries({ queryKey: ['monthlyInsight'] })
+          
+          toast({
+            title: "Success",
+            description: "Expense added successfully",
+          })
+          onClose()
+        },
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to add expense",
+            variant: "destructive",
+          })
+        },
+      }
+    )
+  }
+
   return (
-    <form className="grid gap-4">
-      <div className="grid gap-2">
-        <Label htmlFor="date">Date</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : "Select date"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar mode="single" selected={date} onSelect={setDate} initialFocus />
-          </PopoverContent>
-        </Popover>
-      </div>
+    <form className="grid gap-4" onSubmit={handleSubmit}>
       <div className="grid gap-2">
         <Label htmlFor="description">Description</Label>
-        <Input id="description" placeholder="Enter expense description" />
+        <Input 
+          id="description" 
+          placeholder="Enter expense description" 
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+        />
       </div>
       <div className="grid gap-2">
         <Label htmlFor="category">Category</Label>
-        <Select>
+        <Select value={category} onValueChange={setCategory} required>
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="groceries">Groceries</SelectItem>
-            <SelectItem value="rent">Rent</SelectItem>
-            <SelectItem value="utilities">Utilities</SelectItem>
-            <SelectItem value="entertainment">Entertainment</SelectItem>
-            <SelectItem value="transportation">Transportation</SelectItem>
-            <SelectItem value="other">Other</SelectItem>
+            {categories?.map((cat) => (
+              <SelectItem key={cat.id} value={cat.name}>
+                {cat.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="amount">Amount</Label>
-        <Input id="amount" type="number" placeholder="0.00" step="0.01" />
+        <Input 
+          id="amount" 
+          type="number" 
+          placeholder="0.00" 
+          step="0.01" 
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+        />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="receipt">Receipt</Label>
+        <Label htmlFor="receipt">Receipt (optional)</Label>
         <div className="flex items-center gap-4">
           <Label
             htmlFor="receipt-upload"
@@ -84,7 +175,14 @@ export function ExpenseForm({ onClose }: ExpenseFormProps) {
           >
             <Upload className="h-4 w-4" />
             <span>Upload receipt</span>
-            <Input id="receipt-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+            <Input 
+              id="receipt-upload" 
+              type="file" 
+              accept="image/*" 
+              className="hidden" 
+              onChange={handleFileChange}
+              disabled={isPending}
+            />
           </Label>
           {receiptPreview && (
             <div className="relative h-16 w-16 overflow-hidden rounded-md border">
@@ -98,12 +196,13 @@ export function ExpenseForm({ onClose }: ExpenseFormProps) {
         </div>
       </div>
       <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
           Cancel
         </Button>
-        <Button>Save Expense</Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Saving..." : "Save Expense"}
+        </Button>
       </div>
     </form>
   )
 }
-

@@ -1,5 +1,5 @@
 import express from 'express';
-import { setUserCategoryLimitController, updateCategoryLimitController } from '../controllers/userCategoryLimit.controller';
+import { setUserCategoryLimitController, updateCategoryLimitController, getUserCategoryLimitsController } from '../controllers/userCategoryLimit.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
 const router = express.Router();
@@ -103,5 +103,57 @@ router.post('/', authenticateToken, setUserCategoryLimitController);
  *         description: Internal server error
  */
 router.patch('/', authenticateToken, updateCategoryLimitController);
+
+/**
+ * @swagger
+ * /userCategoryLimit:
+ *   get:
+ *     summary: Get user category limits
+ *     tags: [UserCategoryLimit]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: groupId
+ *         schema:
+ *           type: string
+ *         description: Optional group ID to get category limits for a specific group
+ *     responses:
+ *       200:
+ *         description: User category limits retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   userId:
+ *                     type: string
+ *                   categoryId:
+ *                     type: string
+ *                   groupId:
+ *                     type: string
+ *                   limit:
+ *                     type: number
+ *                   year:
+ *                     type: string
+ *                   month:
+ *                     type: string
+ *                   category:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *       400:
+ *         description: User ID is missing
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/', authenticateToken, getUserCategoryLimitsController);
 
 export default router;

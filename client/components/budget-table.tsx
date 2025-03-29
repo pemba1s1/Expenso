@@ -1,158 +1,76 @@
 "use client"
 
-import { useState } from "react"
-import { Edit2, Save } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { useMonthlyExpenseSummary } from "@/hooks/api/useExpense"
+import { useMonthStore } from "@/stores/useMonthStore"
+import { useGetUserCategoryLimits } from "@/hooks/api/useUserCategoryLimit"
+import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
-// Sample budget data
-const initialBudgetData = [
-  {
-    id: 1,
-    category: "Groceries",
-    budgeted: 500,
-    spent: 420,
-    remaining: 80,
-    progress: 84,
-  },
-  {
-    id: 2,
-    category: "Rent",
-    budgeted: 1200,
-    spent: 1200,
-    remaining: 0,
-    progress: 100,
-  },
-  {
-    id: 3,
-    category: "Utilities",
-    budgeted: 300,
-    spent: 250,
-    remaining: 50,
-    progress: 83,
-  },
-  {
-    id: 4,
-    category: "Entertainment",
-    budgeted: 200,
-    spent: 180,
-    remaining: 20,
-    progress: 90,
-  },
-  {
-    id: 5,
-    category: "Savings",
-    budgeted: 500,
-    spent: 400,
-    remaining: 100,
-    progress: 80,
-  },
-  {
-    id: 6,
-    category: "Transportation",
-    budgeted: 300,
-    spent: 320,
-    remaining: -20,
-    progress: 107,
-  },
-]
+interface BudgetTableProps {
+  groupId?: string
+}
 
-export function BudgetTable() {
-  const [budgetData, setBudgetData] = useState(initialBudgetData)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [editValue, setEditValue] = useState<number>(0)
-
-  const handleEdit = (id: number, currentValue: number) => {
-    setEditingId(id)
-    setEditValue(currentValue)
-  }
-
-  const handleSave = (id: number) => {
-    const updatedData = budgetData.map((item) => {
-      if (item.id === id) {
-        const spent = item.spent
-        const remaining = editValue - spent
-        const progress = (spent / editValue) * 100
-        return {
-          ...item,
-          budgeted: editValue,
-          remaining,
-          progress,
-        }
-      }
-      return item
-    })
-
-    setBudgetData(updatedData)
-    setEditingId(null)
-  }
-
-  const getProgressColor = (progress: number) => {
-    if (progress > 100) return "bg-destructive"
-    if (progress > 85) return "bg-warning"
-    return "bg-primary"
-  }
+export function BudgetTable({ groupId }: BudgetTableProps) {
+  const router = useRouter()
+  const selectedMonth = useMonthStore((state) => state.selectedMonth)
+  const monthName = useMonthStore((state) => state.getMonthName())
+  const [year] = selectedMonth.split('-')
+  
+  const { data: summary } = useMonthlyExpenseSummary(year, monthName, groupId)
+  const { data: categoryLimits } = useGetUserCategoryLimits(groupId)
+  const categories = summary?.totalAmountPerCategory || []
 
   return (
-    <div className="w-full overflow-auto">
-      <Table>
-        <TableHeader>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Category</TableHead>
+          <TableHead>Spent</TableHead>
+          <TableHead>Budget</TableHead>
+          <TableHead>Remaining</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {categories.length === 0 ? (
           <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead className="text-right">Budgeted</TableHead>
-            <TableHead className="text-right">Spent</TableHead>
-            <TableHead className="text-right">Remaining</TableHead>
-            <TableHead>Progress</TableHead>
-            <TableHead className="w-[50px]"></TableHead>
+            <TableCell colSpan={4} className="text-center py-4">
+              No expenses recorded for this period
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {budgetData.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">{item.category}</TableCell>
-              <TableCell className="text-right">
-                {editingId === item.id ? (
-                  <Input
-                    type="number"
-                    value={editValue}
-                    onChange={(e) => setEditValue(Number(e.target.value))}
-                    className="w-24 h-8"
-                  />
+        ) : categories.map((category) => {
+          const categoryLimit = categoryLimits?.find(limit => limit.category.name === category.name)
+          const budget = categoryLimit?.limit || 0
+          const remaining = budget > 0 ? budget - category.amount : 0
+
+          return (
+            <TableRow key={category.name}>
+              <TableCell>{category.name}</TableCell>
+              <TableCell>${category.amount.toFixed(2)}</TableCell>
+              <TableCell>
+                {budget > 0 ? (
+                  `$${budget.toFixed(2)}`
                 ) : (
-                  `$${item.budgeted.toFixed(2)}`
+                  <span className="text-muted-foreground text-sm">No budget set</span>
                 )}
               </TableCell>
-              <TableCell className="text-right">${item.spent.toFixed(2)}</TableCell>
-              <TableCell className={`text-right ${item.remaining < 0 ? "text-destructive" : ""}`}>
-                ${item.remaining.toFixed(2)}
-              </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <Progress
-                    value={item.progress > 100 ? 100 : item.progress}
-                    className={`h-2 ${getProgressColor(item.progress)}`}
-                  />
-                  <span className="text-xs w-9">{item.progress.toFixed(0)}%</span>
-                </div>
-              </TableCell>
-              <TableCell>
-                {editingId === item.id ? (
-                  <Button variant="ghost" size="icon" onClick={() => handleSave(item.id)}>
-                    <Save className="h-4 w-4" />
-                  </Button>
+                {budget > 0 ? (
+                  `$${remaining.toFixed(2)}`
                 ) : (
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(item.id, item.budgeted)}>
-                    <Edit2 className="h-4 w-4" />
+                  <Button 
+                    variant="link" 
+                    className="text-sm p-0 h-auto"
+                    onClick={() => router.push('/dashboard?section=groups')}
+                  >
+                    Set budget
                   </Button>
                 )}
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          )
+        })}
+      </TableBody>
+    </Table>
   )
 }
-

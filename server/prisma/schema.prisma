@@ -33,19 +33,21 @@ model User {
   // Expense                         Expense[]
   categoryLimits                  UserCategoryLimit[]
   Receipt                         Receipt[]
+  insights                        Insight[]
 }
 
 model Group {
-  id          String       @id @default(uuid())
-  name        String
-  type        GroupType    @default(NORMAL)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  userGroups  UserGroup[]
-  invitations Invitation[]
-  // Expense     Expense[]
-  insights    Insight[]
-  Receipt     Receipt[]
+  id              String             @id @default(uuid())
+  name            String
+  type            GroupType          @default(NORMAL)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  userGroups      UserGroup[]
+  invitations     Invitation[]
+  // Expense      Expense[]
+  insights        Insight[]
+  Receipt         Receipt[]
+  categoryLimits  UserCategoryLimit[]
 }
 
 model UserGroup {
@@ -113,6 +115,7 @@ model UserCategoryLimit {
   id         String   @id @default(uuid())
   userId     String
   categoryId String
+  groupId    String?
   year       String
   month      String
   limit      Float
@@ -120,8 +123,10 @@ model UserCategoryLimit {
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id])
   category   Category @relation(fields: [categoryId], references: [id])
+  group      Group?   @relation(fields: [groupId], references: [id])
 
   @@index([userId])
+  @@index([groupId])
 }
 
 model StripePlan {
@@ -136,15 +141,22 @@ model StripePlan {
 }
 
 model Insight {
-  date                DateTime @id
-  groupId             String
+  id                  String   @id @default(uuid())
+  date                DateTime
+  userId              String?
+  groupId             String?
   summary             String
   topCategories       String
   savingOpportunities String
   tips                String[]
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
-  group               Group    @relation(fields: [groupId], references: [id])
+  user                User?    @relation(fields: [userId], references: [id])
+  group               Group?   @relation(fields: [groupId], references: [id])
+
+  @@index([userId])
+  @@index([groupId])
+  @@index([date])
 }
 
 enum UserRole {

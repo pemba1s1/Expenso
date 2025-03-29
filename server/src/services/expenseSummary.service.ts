@@ -8,7 +8,7 @@ interface ExpenseSummary {
   totalAmountPerCategory: Array<{ name: string, amount: number }>;
 }
 
-const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: string): Promise<ExpenseSummary> => {
+const getExpenseSummary = async (startDate: Date, endDate: Date, userId: string, groupId?: string): Promise<ExpenseSummary> => {
   try {
     const expenses = await prisma.expense.findMany({
       where: {
@@ -17,7 +17,8 @@ const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: strin
             gte: startDate,
             lte: endDate,
           },
-          ...(groupId && { groupId }),
+          userId,
+          ...(groupId ? { groupId } : {}),
         },
       },
       select: {
@@ -66,7 +67,7 @@ const getExpenseSummary = async (startDate: Date, endDate: Date, groupId?: strin
   }
 };
 
-export const getMonthlyExpenseSummary = async (startDate: Date, endDate: Date, userRole: UserRole, groupId?: string): Promise<ExpenseSummary> => {
+export const getMonthlyExpenseSummary = async (startDate: Date, endDate: Date, userRole: UserRole, userId: string, groupId?: string): Promise<ExpenseSummary> => {
   try {
     if (startDate > endDate) {
       throw new Error('Start date cannot be after end date');
@@ -76,7 +77,7 @@ export const getMonthlyExpenseSummary = async (startDate: Date, endDate: Date, u
       throw new Error('Basic users cannot access custom date summaries');
     }
 
-    return getExpenseSummary(startDate, endDate, groupId);
+    return getExpenseSummary(startDate, endDate, userId, groupId);
   }
   catch (error) {
     throw error;
@@ -90,35 +91,23 @@ export interface MonthlyInsight {
   tips: string[];
 }
 
-export const getMonthlyInsight = async (groupId: string, month: string, year: string, newInsight: boolean): Promise<MonthlyInsight> => {
-  if (!groupId) {
-    throw new Error('Group ID is required');
-  }
-
+export const getMonthlyInsight = async (month: string, year: string, newInsight: boolean, userId: string, groupId?: string): Promise<MonthlyInsight> => {
   const { startDate, endDate } = getMonthStartEndDates(year, month);
 
-
   try {
-    // Delete existing insight if newInsight is true
-    if (newInsight) {
-      await prisma.insight.deleteMany({
-        where: {
-          groupId,
-          date: {
-            gte: startDate,
-            lt: endDate,
-          }
-        }
-      });
-    } else {
-      // Check if insight already exists for this month and group
+    // If not requesting new insight, get the most recent insight
+    if (!newInsight) {
       const existingInsight = await prisma.insight.findFirst({
         where: {
-          groupId,
           date: {
             gte: startDate,
             lt: endDate,
-          }
+          },
+          userId,
+          groupId: groupId || null
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
       });
 
@@ -126,44 +115,34 @@ export const getMonthlyInsight = async (groupId: string, month: string, year: st
         return {
           summary: existingInsight.summary,
           topCategories: existingInsight.topCategories,
-          savingOpportunities: '', // This field isn't in the schema, but we'll include it in the response
+          savingOpportunities: existingInsight.savingOpportunities,
           tips: existingInsight.tips
         };
       }
     }
 
     // Generate new insight
-    // First, get the expense summary for the month
-    const expenseSummary = await getExpenseSummary(
-      startDate,
-      endDate,
-      groupId
-    );
+    const expenseSummary = await getExpenseSummary(startDate, endDate, userId, groupId);
+    const generatedInsight = await generateMonthlyExpenseInsights(expenseSummary, month, year);
 
-    // Generate insights using OpenAI
-    const generatedInsight = await generateMonthlyExpenseInsights(
-      expenseSummary,
-      month,
-      year
-    );
-
-    // Save the insight to the database
-    await prisma.insight.create({
+    // Create new insight
+    const savedInsight = await prisma.insight.create({
       data: {
-        date: startDate,
-        groupId,
         summary: generatedInsight.summary,
         topCategories: generatedInsight.topCategories,
         savingOpportunities: generatedInsight.savingOpportunities,
-        tips: generatedInsight.tips
+        tips: generatedInsight.tips,
+        date: startDate,
+        userId,
+        groupId: groupId || null
       }
     });
 
     return {
-      summary: generatedInsight.summary,
-      topCategories: generatedInsight.topCategories,
-      savingOpportunities: generatedInsight.savingOpportunities,
-      tips: generatedInsight.tips
+      summary: savedInsight.summary,
+      topCategories: savedInsight.topCategories,
+      savingOpportunities: savedInsight.savingOpportunities,
+      tips: savedInsight.tips
     };
   } catch (error) {
     console.error('Error getting monthly insight:', error);

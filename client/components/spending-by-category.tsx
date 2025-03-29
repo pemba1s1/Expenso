@@ -1,39 +1,70 @@
 "use client"
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useMonthlyExpenseSummary } from "@/hooks/api/useExpense"
+import { useMonthStore } from "@/stores/useMonthStore"
+import { Skeleton } from "@/components/ui/skeleton"
 
-// Sample spending data by category
-const data = [
-  { name: "Groceries", spent: 420, budget: 500 },
-  { name: "Rent", spent: 1200, budget: 1200 },
-  { name: "Utilities", spent: 250, budget: 300 },
-  { name: "Entertainment", spent: 180, budget: 200 },
-  { name: "Transportation", spent: 320, budget: 300 },
-]
+interface SpendingByCategoryProps {
+  groupId?: string
+}
 
-export function SpendingByCategory() {
+export function SpendingByCategory({ groupId }: SpendingByCategoryProps) {
+  const monthStore = useMonthStore()
+  const { data: summary, isLoading } = useMonthlyExpenseSummary(
+    monthStore.selectedYear,
+    monthStore.getMonthName(),
+    groupId
+  )
+
+  if (isLoading) {
+    return (
+      <div className="w-full">
+        <div className="overflow-x-auto -mx-3 sm:-mx-6">
+          <div className="h-[250px] sm:h-[400px] w-full px-2 sm:px-6">
+            <Skeleton className="h-full w-full rounded-lg" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!summary) return null
+
+  const data = summary.totalAmountPerCategory.map(category => ({
+    name: category.name,
+    amount: category.amount
+  }))
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip formatter={(value) => [`$${value}`, ""]} />
-          <Legend />
-          <Bar dataKey="spent" name="Spent" fill="#0088FE" />
-          <Bar dataKey="budget" name="Budget" fill="#00C49F" />
-        </BarChart>
-      </ResponsiveContainer>
+    <div className="w-full">
+      <div className="overflow-x-auto -mx-3 sm:-mx-6">
+        <div className="h-[250px] sm:h-[400px] w-full px-2 sm:px-6">
+          <ResponsiveContainer width="100%" height="100%" debounce={50}>
+            <BarChart
+              data={data}
+              margin={{
+                top: 20,
+                right: 30,
+                left: 0,
+                bottom: 20,
+              }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} width={45} />
+              <Tooltip 
+                formatter={(value: number) => [`$${value.toFixed(2)}`, ""]}
+                labelStyle={{ color: "var(--foreground)" }}
+                contentStyle={{
+                  backgroundColor: "var(--background)",
+                  border: "1px solid var(--border)"
+                }}
+              />
+              <Bar dataKey="amount" name="Amount" fill="var(--primary)" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   )
 }
-

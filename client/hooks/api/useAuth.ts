@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import axiosInstance from '@/lib/axiosInstance'
 import { useAuthContext } from '@/app/providers'
+import { useRouter } from 'next/navigation'
 
 // Types
 export interface RegisterUserDto {
@@ -22,8 +23,9 @@ export interface AuthResponse {
     email: string
     name: string
     picture?: string
+    role?: string
   }
-  token: string
+  accessToken: string
 }
 
 // Register user
@@ -37,7 +39,7 @@ export const useRegister = () => {
     },
     onSuccess: (data) => {
       // Store token in localStorage
-      localStorage.setItem('token', data.token)
+      localStorage.setItem('token', data.accessToken)
       // Update user context
       setUser(data.user)
     },
@@ -47,6 +49,7 @@ export const useRegister = () => {
 // Login user
 export const useLogin = () => {
   const { setUser } = useAuthContext()
+  const router = useRouter()
 
   return useMutation({
     mutationFn: async (credentials: LoginUserDto) => {
@@ -55,9 +58,11 @@ export const useLogin = () => {
     },
     onSuccess: (data) => {
       // Store token in localStorage
-      localStorage.setItem('token', data.token)
+      localStorage.setItem('token', data.accessToken)
       // Update user context
       setUser(data.user)
+      // Redirect to dashboard after successful login
+      router.push('/dashboard')
     },
   })
 }

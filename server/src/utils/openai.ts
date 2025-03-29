@@ -91,7 +91,6 @@ export const generateMonthlyExpenseInsights = async (
             ],
             response_format: { type: 'json_object' }
         });
-
         const insights = JSON.parse(response.choices[0]?.message?.content || '{}');
         return insights;
     } catch (error) {
@@ -168,7 +167,7 @@ export const getReceiptData = async (receiptImage: string) => {
             ],
             response_format: { type: 'json_object' }
         });
-        console.log(response);
+        console.log(response.choices[0]?.message?.content);
 
         const extractedData = JSON.parse(response.choices[0]?.message?.content || '{}');
 

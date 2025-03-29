@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useGroupStore } from "@/stores/useGroupStore"
+import { useMonthStore } from "@/stores/useMonthStore"
 import { Search, FileText, Filter, ChevronDown, ChevronRight } from "lucide-react"
 import { useUserExpenses, type Expense, type Receipt } from "@/hooks/api/useExpense"
 import { Button } from "@/components/ui/button"
@@ -22,11 +24,28 @@ export function TransactionList() {
   const [sortOrder, setSortOrder] = useState("desc")
   const [expandedReceipts, setExpandedReceipts] = useState<ExpandedReceipts>({})
 
-  // Get current date for the month's expenses
-  const currentDate = new Date()
-  const { data: expenses = [] } = useUserExpenses(currentDate)
+  const selectedGroup = useGroupStore((state) => state.selectedGroup)
+  const monthStore = useMonthStore()
 
-  const categories = [...new Set(expenses.map((e) => e.category.name))]
+  // Debug changes to query parameters
+  useEffect(() => {
+    console.log('Expense query parameters:', { 
+      year: monthStore.selectedYear,
+      month: monthStore.getMonthName(),
+      groupId: selectedGroup?.id
+    })
+  }, [monthStore.selectedYear, monthStore.selectedMonth, selectedGroup])
+
+  const { data: receipts = [] } = useUserExpenses(
+    monthStore.selectedYear,
+    monthStore.getMonthName(),
+    selectedGroup?.id
+  )
+
+  // Get unique categories from all expenses across all receipts
+  const categories = [...new Set(receipts.flatMap(receipt => 
+    receipt.expenses.map(expense => expense.category.name)
+  ))]
 
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories((prev) =>
@@ -34,27 +53,14 @@ export function TransactionList() {
     )
   }
 
-  // Group expenses by receipt
-  const groupedExpenses = expenses.reduce((acc, expense) => {
-    if (expense.Receipt) {
-      if (!acc[expense.Receipt.id]) {
-        acc[expense.Receipt.id] = {
-          receipt: expense.Receipt,
-          expenses: []
-        }
-      }
-      acc[expense.Receipt.id].expenses.push(expense)
-    } else {
-      if (!acc['individual']) {
-        acc['individual'] = {
-          receipt: null,
-          expenses: []
-        }
-      }
-      acc['individual'].expenses.push(expense)
+  // Create a map of receipts with their expenses
+  const groupedExpenses = receipts.reduce((acc, receipt) => {
+    acc[receipt.id] = {
+      receipt,
+      expenses: receipt.expenses
     }
     return acc
-  }, {} as Record<string, { receipt: Receipt | null, expenses: Expense[] }>)
+  }, {} as Record<string, { receipt: Receipt, expenses: Expense[] }>)
 
   // Filter and sort expenses
   const filteredGroups = Object.entries(groupedExpenses)
@@ -82,17 +88,17 @@ export function TransactionList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="flex flex-col gap-2 sm:gap-4 sm:flex-row">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search transactions..."
-            className="pl-8"
+            className="pl-8 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="flex gap-2">
@@ -139,83 +145,80 @@ export function TransactionList() {
           </Select>
         </div>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead></TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead className="text-right">Amount</TableHead>
-              <TableHead>Receipt</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredGroups.map(([groupId, group]) => (
-              <>
-                {group.receipt ? (
-                  // Receipt group header
-                  <TableRow key={groupId} className="bg-muted/50">
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => toggleReceipt(groupId)}
-                      >
-                        {expandedReceipts[groupId] ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{new Date(group.receipt.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell colSpan={2}>
-                      Receipt Total: ${group.receipt.totalAmount.toFixed(2)}
+      <div className="space-y-4">
+        {filteredGroups.map(([groupId, group]) => (
+          <div key={groupId} className="rounded-md border overflow-hidden">
+            {/* Receipt Header */}
+            <div 
+              className="bg-muted/50 p-3 sm:p-4 cursor-pointer"
+              onClick={() => toggleReceipt(groupId)}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex-1 flex items-start sm:items-center gap-2">
+                  {expandedReceipts[groupId] ? (
+                    <ChevronDown className="h-4 w-4 mt-1 sm:mt-0" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 mt-1 sm:mt-0" />
+                  )}
+                  <div>
+                    <div className="font-medium text-sm sm:text-base flex flex-wrap gap-x-1">
+                      <span>{new Date(group.receipt.createdAt).toLocaleDateString()}</span>
+                      <span>•</span>
+                      <span>${group.receipt.totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-muted-foreground flex flex-wrap gap-x-1">
+                      <span>{group.expenses.length} items</span>
                       {group.receipt.taxAmount > 0 && (
-                        <span className="ml-2 text-muted-foreground">
-                          (Tax: ${group.receipt.taxAmount.toFixed(2)})
-                        </span>
+                        <>
+                          <span>•</span>
+                          <span>Tax: ${group.receipt.taxAmount.toFixed(2)}</span>
+                        </>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${(group.receipt.totalAmount + group.receipt.taxAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      {group.receipt.receiptImageUrl && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <FileText className="h-4 w-4" />
-                          <span className="sr-only">View receipt</span>
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-                {/* Individual expenses */}
-                {(expandedReceipts[groupId] || !group.receipt) &&
-                  group.expenses.map((expense) => (
-                    <TableRow key={expense.id} className={group.receipt ? "bg-muted/20" : ""}>
-                      <TableCell></TableCell>
-                      <TableCell>{new Date(expense.createdAt).toLocaleDateString()}</TableCell>
-                      <TableCell>{expense.description}</TableCell>
-                      <TableCell>{expense.category.name}</TableCell>
-                      <TableCell className="text-right">${expense.amount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        {!group.receipt && expense.receiptImageUrl && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <FileText className="h-4 w-4" />
-                            <span className="sr-only">View receipt</span>
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-              </>
-            ))}
-          </TableBody>
-        </Table>
+                    </div>
+                  </div>
+                </div>
+                {group.receipt.receiptImageUrl && (
+                  <a 
+                    href={group.receipt.receiptImageUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground border sm:border-0 rounded p-1 sm:p-0"
+                  >
+                    <FileText className="h-4 w-4" />
+                    View Receipt
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Expenses Table */}
+            {expandedReceipts[groupId] && (
+              <div className="px-2 py-1 sm:p-4">
+                <div className="overflow-x-auto -mx-2 px-2">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs sm:text-sm">Description</TableHead>
+                        <TableHead className="text-xs sm:text-sm">Category</TableHead>
+                        <TableHead className="text-right text-xs sm:text-sm">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.expenses.map((expense) => (
+                        <TableRow key={expense.id} className="text-xs sm:text-sm">
+                          <TableCell className="py-1.5 sm:py-4 pr-2 break-words">{expense.description}</TableCell>
+                          <TableCell className="py-1.5 sm:py-4 px-2 break-words">{expense.category.name}</TableCell>
+                          <TableCell className="text-right py-1.5 sm:py-4 pl-2 whitespace-nowrap">${expense.amount.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   )

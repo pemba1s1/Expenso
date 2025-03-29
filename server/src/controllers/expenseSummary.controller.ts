@@ -23,7 +23,13 @@ export const monthlyExpenseSummaryController = async (req: Request, res: Respons
   }
 
   try {
-    const summary = await getMonthlyExpenseSummary(startDate, endDate, user.subscriptionPlan, groupId as string);
+    const summary = await getMonthlyExpenseSummary(
+      startDate,
+      endDate,
+      user.subscriptionPlan,
+      user.id,
+      groupId as string | undefined
+    );
     res.status(200).json(summary);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -33,14 +39,21 @@ export const monthlyExpenseSummaryController = async (req: Request, res: Respons
 
 export const monthlyInsightController = async (req: Request, res: Response) => {
   const { groupId, year, month, newInsight } = req.query;
+  const user: User = req.user as User;
 
-  if (!groupId || !year || !month) {
-    res.status(400).json({ error: 'Group ID, year, and month are required' });
+  if (!year || !month) {
+    res.status(400).json({ error: 'Year and month are required' });
     return;
   }
 
   try {
-    const insight = await getMonthlyInsight(groupId as string, month as string, year as string, newInsight === 'true');
+    const insight = await getMonthlyInsight(
+      month as string,
+      year as string,
+      newInsight ? newInsight === 'true' : false,
+      user.id,
+      groupId as string | undefined
+    );
     res.status(200).json(insight);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -1,13 +1,16 @@
 "use client"
 
-import { ReactNode, useState, useEffect } from "react"
+import { ReactNode } from "react"
 import { Home, CreditCard, BarChart, Users, Settings } from "lucide-react"
+import { format } from "date-fns"
 
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useMonthStore } from "@/stores/useMonthStore"
 import { useDashboard } from "@/hooks/use-dashboard"
 import { useUserGroups } from "@/hooks/api/useGroup"
+import { useGroupStore } from "@/stores/useGroupStore"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { GroupDetails } from "@/components/group-details"
+import { GroupsSection } from "../sections/groups"
 import { UserProfileSidebar } from "@/components/user-profile-sidebar"
 import {
   SidebarProvider,
@@ -27,19 +30,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const { activeSection, setActiveSection } = useDashboard()
   const isMobile = useIsMobile()
   const { data: groups } = useUserGroups()
-  const [currentGroupId, setCurrentGroupId] = useState<string>("no-group")
-  const [showGroupDetails, setShowGroupDetails] = useState(false)
-  
-  // When a group is selected, show the group details
-  useEffect(() => {
-    if (currentGroupId && currentGroupId !== "no-group") {
-      setShowGroupDetails(true)
-      setActiveSection("groups")
-    } else if (currentGroupId === "no-group") {
-      setShowGroupDetails(false)
-    }
-  }, [currentGroupId, setActiveSection])
-
+  const { selectedGroup, setSelectedGroup } = useGroupStore()
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-muted/40">
@@ -55,10 +46,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     isActive={activeSection === "dashboard"}
-                    onClick={() => {
-                      setActiveSection("dashboard")
-                      setShowGroupDetails(false)
-                    }}
+                    onClick={() => setActiveSection("dashboard")}
                   >
                     <Home className="h-4 w-4" />
                     <span>Dashboard</span>
@@ -67,10 +55,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     isActive={activeSection === "expenses"} 
-                    onClick={() => {
-                      setActiveSection("expenses")
-                      setShowGroupDetails(false)
-                    }}
+                    onClick={() => setActiveSection("expenses")}
                   >
                     <CreditCard className="h-4 w-4" />
                     <span>Expenses</span>
@@ -79,10 +64,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     isActive={activeSection === "insights"} 
-                    onClick={() => {
-                      setActiveSection("insights")
-                      setShowGroupDetails(false)
-                    }}
+                    onClick={() => setActiveSection("insights")}
                   >
                     <BarChart className="h-4 w-4" />
                     <span>Insights</span>
@@ -91,10 +73,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     isActive={activeSection === "groups"} 
-                    onClick={() => {
-                      setActiveSection("groups")
-                      setShowGroupDetails(true)
-                    }}
+                    onClick={() => setActiveSection("groups")}
                   >
                     <Users className="h-4 w-4" />
                     <span>Groups</span>
@@ -103,10 +82,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <SidebarMenuItem>
                   <SidebarMenuButton 
                     isActive={activeSection === "settings"} 
-                    onClick={() => {
-                      setActiveSection("settings")
-                      setShowGroupDetails(false)
-                    }}
+                    onClick={() => setActiveSection("settings")}
                   >
                     <Settings className="h-4 w-4" />
                     <span>Settings</span>
@@ -122,10 +98,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Sidebar>
         )}
         <div className="flex-1 overflow-auto dashboard-content flex flex-col">
-          <header className="flex h-14 lg:h-[60px] items-center gap-4 border-b bg-background px-6 w-full">
-            <SidebarTrigger />
-            <div className="flex-1">
-              <h1 className="text-lg font-semibold">
+          <header className="flex flex-col sm:flex-row min-h-[60px] sm:h-14 lg:h-[60px] items-start sm:items-center gap-2 sm:gap-4 border-b bg-background px-3 sm:px-6 py-3 sm:py-0 w-full">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+              <SidebarTrigger />
+              <h1 className="text-base sm:text-lg font-semibold truncate">
                 {activeSection === "dashboard" && "Dashboard"}
                 {activeSection === "expenses" && "Expense Tracking"}
                 {activeSection === "insights" && "Insights & Reports"}
@@ -133,16 +109,28 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 {activeSection === "settings" && "Settings"}
               </h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto sm:ml-auto">
               <Select 
-                value={currentGroupId} 
-                onValueChange={setCurrentGroupId}
+                value={selectedGroup?.id || "_none"} 
+                onValueChange={(value) => {
+                  if (value === "_none") {
+                    setSelectedGroup(null)
+                  } else if (groups) {
+                    const group = groups.find(g => g.groupId === value)
+                    if (group) {
+                      setSelectedGroup({
+                        id: group.groupId,
+                        name: group.group.name
+                      })
+                    }
+                  }
+                }}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Select group" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="no-group">No Group</SelectItem>
+                  <SelectItem value="_none">No Group</SelectItem>
                   {groups && groups.map((group) => (
                     <SelectItem key={group.groupId} value={group.groupId}>
                       {group.group.name}
@@ -150,22 +138,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Select defaultValue="april">
-                <SelectTrigger className="w-[180px]">
+              <Select 
+                value={useMonthStore((state) => state.getFormattedMonth())}
+                onValueChange={useMonthStore((state) => state.setSelectedMonth)}
+              >
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Select period" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="january">January 2025</SelectItem>
-                  <SelectItem value="february">February 2025</SelectItem>
-                  <SelectItem value="march">March 2025</SelectItem>
-                  <SelectItem value="april">April 2025</SelectItem>
+                  {(() => {
+                    const months = [];
+                    const now = new Date();
+                    const currentYear = now.getFullYear();
+                    const currentMonth = now.getMonth();
+                    
+                    for (let month = 0; month <= currentMonth; month++) {
+                      const date = new Date(currentYear, month);
+                      const value = format(date, "yyyy-MM");
+                      const label = format(date, "MMMM yyyy");
+                      months.push({ value, label });
+                    }
+                    
+                    return months.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>
           </header>
-          <main className="grid flex-1 items-start gap-4 p-4 md:gap-8 md:p-6 w-full max-w-7xl mx-auto">
-            {showGroupDetails && activeSection === "groups" ? (
-              <GroupDetails groupId={currentGroupId} />
+          <main className="grid flex-1 items-start gap-4 px-2 py-4 sm:p-4 md:gap-8 md:p-6 w-full max-w-7xl mx-auto overflow-hidden">
+            {activeSection === "groups" ? (
+              <GroupsSection />
             ) : (
               children
             )}

@@ -1,20 +1,19 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { Home, CreditCard, BarChart, Camera, User, Users, LogOut, Settings } from "lucide-react"
+import { useState, useRef } from "react"
+import { Home, CreditCard, BarChart, Camera, LogOut, Settings, Loader2, Users } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useAuthContext } from "@/app/providers"
 import { useLogout } from "@/hooks/use-auth"
-import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { useAddExpenseFromReceipt } from "@/hooks/api/useExpense"
+import { useGroupStore } from "@/stores/useGroupStore"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { GroupDetails } from "@/components/group-details"
-import { useUserGroups } from "@/hooks/api/useGroup"
 
 interface MobileNavProps {
   activeSection: string
@@ -30,45 +29,49 @@ export function MobileNav({
   const isMobile = useIsMobile()
   const { user } = useAuthContext()
   const logout = useLogout()
-  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [currentGroupId, setCurrentGroupId] = useState<string | undefined>()
-  const { data: groups } = useUserGroups()
-  const [showGroupDetails, setShowGroupDetails] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
-  
-  // When a group is selected, show the group details
-  useEffect(() => {
-    if (currentGroupId && currentGroupId !== "no-group") {
-      setShowGroupDetails(true)
-      setActiveSection("groups")
-      setIsProfileOpen(false)
-    } else if (currentGroupId === "no-group") {
-      setShowGroupDetails(false)
-    }
-  }, [currentGroupId, setActiveSection])
 
   const handleCameraClick = (e: React.MouseEvent) => {
     e.preventDefault()
     fileInputRef.current?.click()
   }
 
+  const { toast } = useToast()
+  const { selectedGroup } = useGroupStore()
+  const addExpenseFromReceipt = useAddExpenseFromReceipt()
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // Here you would handle the file, e.g., upload it to your server
-      console.log("File selected:", file)
-      
-      // TODO: File handling logic goes here
-      // 1. Show a preview of the image
-      // 2. Upload it to server
-      // 3. Process it for receipt data extraction
+    if (file && selectedGroup?.id) {
+      addExpenseFromReceipt.mutate(
+        { receiptImage: file, groupId: selectedGroup.id },
+        {
+          onSuccess: () => {
+            setActiveSection("expenses")
+            toast({
+              title: "Receipt uploaded successfully",
+              description: "Your receipt is being processed and expenses will be added shortly.",
+            })
+          },
+          onError: (error) => {
+            toast({
+              title: "Failed to upload receipt",
+              description: error.message,
+              variant: "destructive",
+            })
+          },
+        }
+      )
+    } else if (!selectedGroup?.id) {
+      toast({
+        title: "Please select a group",
+        description: "You need to select a group before uploading a receipt.",
+        variant: "destructive",
+      })
     }
-  }
-
-  const handleProfileClick = () => {
-    router.push('/profile')
-    setIsProfileOpen(false)
+    // Reset the input
+    e.target.value = ""
   }
 
   const handleSettingsClick = () => {
@@ -78,6 +81,7 @@ export function MobileNav({
 
   const handleGroupClick = () => {
     setActiveSection("groups")
+    setIsProfileOpen(false)
   }
 
   const handleLogoutClick = () => {
@@ -107,141 +111,109 @@ export function MobileNav({
         className="hidden"
       />
       
-      {showGroupDetails && activeSection === "groups" ? (
-        <div className="p-4 pb-20">
-          <GroupDetails groupId={currentGroupId} />
-        </div>
-      ) : (
-        <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
-          <TabsList className="grid grid-cols-5 w-full h-16 rounded-none bg-background relative">
-            <TabsTrigger 
-              value="dashboard" 
-              className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
-              onClick={() => setShowGroupDetails(false)}
-            >
-              <Home className="h-5 w-5" />
-              <span className="text-xs">Home</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="expenses" 
-              className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
-              onClick={() => setShowGroupDetails(false)}
-            >
-              <CreditCard className="h-5 w-5" />
-              <span className="text-xs">Expenses</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="camera" 
-              className="flex flex-col items-center justify-center relative -top-4" 
-              onClick={handleCameraClick}
-            >
-              <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
+      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+        <TabsList className="grid grid-cols-5 w-full h-16 rounded-none bg-background relative">
+          <TabsTrigger 
+            value="dashboard" 
+            className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-xs">Home</span>
+          </TabsTrigger>
+          <TabsTrigger 
+            value="expenses" 
+            className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
+          >
+            <CreditCard className="h-5 w-5" />
+            <span className="text-xs">Expenses</span>
+          </TabsTrigger>
+          <button 
+            className="flex flex-col items-center justify-center relative -top-4" 
+            onClick={handleCameraClick}
+          >
+            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg">
+              {addExpenseFromReceipt.isPending ? (
+                <Loader2 className="h-7 w-7 text-primary-foreground animate-spin" />
+              ) : (
                 <Camera className="h-7 w-7 text-primary-foreground" />
-              </div>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="insights" 
-              className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
-              onClick={() => setShowGroupDetails(false)}
-            >
-              <BarChart className="h-5 w-5" />
-              <span className="text-xs">Insights</span>
-            </TabsTrigger>
+              )}
+            </div>
+          </button>
+          <TabsTrigger 
+            value="insights" 
+            className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
+          >
+            <BarChart className="h-5 w-5" />
+            <span className="text-xs">Insights</span>
+          </TabsTrigger>
+          
+          <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+            <SheetTrigger asChild>
+              <button 
+                className="flex flex-col items-center justify-center gap-1 h-full w-full hover:bg-accent hover:text-accent-foreground data-[state=active]:bg-background data-[state=active]:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsProfileOpen(true);
+                }}
+              >
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={user?.picture || ''} alt={user?.name || user?.email || 'User'} />
+                  <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                </Avatar>
+                <span className="text-xs">Profile</span>
+              </button>
+            </SheetTrigger>
             
-            <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-              <SheetTrigger asChild>
-                <TabsTrigger 
-                  value="profile" 
-                  className="flex flex-col items-center justify-center gap-1 data-[state=active]:shadow-none"
-                >
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={user?.picture || ''} alt={user?.name || user?.email || 'User'} />
-                    <AvatarFallback className="text-xs">{initials}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs">Profile</span>
-                </TabsTrigger>
-              </SheetTrigger>
+            <SheetContent side="bottom" className="h-[60vh] pb-safe-area-bottom">
+              <SheetHeader className="mb-4">
+                <SheetTitle>Profile</SheetTitle>
+              </SheetHeader>
               
-              <SheetContent side="bottom" className="h-[60vh] pb-safe-area-bottom">
-                <SheetHeader className="mb-4">
-                  <SheetTitle>Profile</SheetTitle>
-                </SheetHeader>
-                
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-3 p-2">
-                    <Avatar className="h-12 w-12">
-                      <AvatarImage src={user?.picture || ''} alt={user?.name || user?.email || 'User'} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{user?.name || 'User'}</p>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
-                    </div>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center gap-3 p-2">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={user?.picture || ''} alt={user?.name || user?.email || 'User'} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium">{user?.name || 'User'}</p>
+                    <p className="text-sm text-muted-foreground">{user?.email}</p>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start" 
-                      onClick={handleProfileClick}
-                    >
-                      <User className="mr-2 h-5 w-5" />
-                      Profile
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start" 
-                      onClick={handleGroupClick}
-                    >
-                      <Users className="mr-2 h-5 w-5" />
-                      Groups
-                    </Button>
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start" 
-                      onClick={handleSettingsClick}
-                    >
-                      <Settings className="mr-2 h-5 w-5" />
-                      Settings
-                    </Button>
-                    
-                    <div className="mt-2">
-                      <Select 
-                        value={currentGroupId} 
-                        onValueChange={setCurrentGroupId}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Select group" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="no-group">No Group</SelectItem>
-                          {groups && groups.map((group) => (
-                            <SelectItem key={group.groupId} value={group.groupId}>
-                              {group.group.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-red-500" 
-                      onClick={handleLogoutClick}
-                    >
-                      <LogOut className="mr-2 h-5 w-5" />
-                      Logout
-                    </Button>
-                  </div>
-                  
                 </div>
-              </SheetContent>
-            </Sheet>
-          </TabsList>
-        </Tabs>
-      )}
+                
+                <div className="space-y-2">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start" 
+                    onClick={handleSettingsClick}
+                  >
+                    <Settings className="mr-2 h-5 w-5" />
+                    Settings
+                  </Button>
+
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start" 
+                    onClick={handleGroupClick}
+                  >
+                    <Users className="mr-2 h-5 w-5" />
+                    Groups
+                  </Button>
+                  
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-start text-red-500" 
+                    onClick={handleLogoutClick}
+                  >
+                    <LogOut className="mr-2 h-5 w-5" />
+                    Logout
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </TabsList>
+      </Tabs>
     </div>
   )
 }

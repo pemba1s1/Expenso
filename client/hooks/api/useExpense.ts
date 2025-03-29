@@ -17,11 +17,24 @@ export interface ExpenseCategory {
 
 export interface Receipt {
   id: string
+  userId: string
+  groupId: string
   totalAmount: number
   taxAmount: number
   receiptImageUrl?: string
   createdAt: string
   updatedAt: string
+  expenses: Expense[]
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+  group: {
+    id: string
+    name: string
+    type: string
+  }
 }
 
 export interface Expense {
@@ -49,11 +62,62 @@ export interface ExpenseSummary {
   }[]
 }
 
-// Add expense
+export interface MonthlyInsight {
+  summary: string
+  topCategories: string
+  savingOpportunities: string
+  tips: string[]
+}
+
+export interface AddExpenseParams {
+  amount: string
+  description: string
+  groupId: string
+  categoryName: string
+  receiptImage?: File
+}
+
+export interface AddExpenseFromReceiptParams {
+  receiptImage: File
+  groupId: string
+}
+
+// Add individual expense
 export const useAddExpense = () => {
   return useMutation({
-    mutationFn: async (formData: FormData) => {
+    mutationFn: async (params: AddExpenseParams) => {
+      const formData = new FormData()
+      formData.append('amount', params.amount)
+      formData.append('description', params.description)
+      formData.append('groupId', params.groupId)
+      formData.append('categoryName', params.categoryName)
+      if (params.receiptImage) {
+        formData.append('receiptImage', params.receiptImage)
+      }
+
       const response = await axiosInstance.post<Expense>('/expense', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+      return response.data
+    },
+  })
+}
+
+// Add expense from receipt
+export const useAddExpenseFromReceipt = () => {
+  return useMutation({
+    mutationFn: async (params: AddExpenseFromReceiptParams) => {
+      const formData = new FormData()
+      formData.append('receiptImage', params.receiptImage)
+      formData.append('groupId', params.groupId)
+
+      const response = await axiosInstance.post<{
+        message: string
+        expenseCount: number
+        receiptId: string
+      }>('/expense/receipt', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -74,43 +138,31 @@ export const useApproveExpense = () => {
 }
 
 // Get user expenses for a month
-export const useUserExpenses = (date: Date, groupId?: string, enabled = true) => {
+export const useUserExpenses = (year: string, month: string, groupId?: string, enabled = true) => {
   return useQuery({
-    queryKey: ['userExpenses', date.toISOString(), groupId],
+    queryKey: ['userExpenses', year, month, groupId],
     queryFn: async () => {
-      const params = new URLSearchParams()
+      const params = new URLSearchParams({
+        year,
+        month,
+      })
       if (groupId) {
         params.append('groupId', groupId)
       }
-      params.append('date', date.toISOString())
       
-      const response = await axiosInstance.get<Expense[]>(`/expense/user?${params.toString()}`)
+      const response = await axiosInstance.get<Receipt[]>(`expense/user?${params.toString()}`)
       return response.data
     },
     enabled,
   })
 }
 
-// Get expense summary for custom date range
-export const useExpenseSummary = (
-  startDate: string,
-  endDate: string,
-  groupId?: string,
-  enabled = true
-) => {
+// Get expense by ID
+export const useExpenseById = (id: string, enabled = true) => {
   return useQuery({
-    queryKey: ['expenseSummary', startDate, endDate, groupId],
+    queryKey: ['expense', id],
     queryFn: async () => {
-      const params = new URLSearchParams({
-        startDate,
-        endDate,
-      })
-      
-      if (groupId) {
-        params.append('groupId', groupId)
-      }
-      
-      const response = await axiosInstance.get<ExpenseSummary>(`/expense/summary?${params.toString()}`)
+      const response = await axiosInstance.get<Expense>(`/expense/${id}`)
       return response.data
     },
     enabled,
@@ -136,9 +188,49 @@ export const useMonthlyExpenseSummary = (
         params.append('groupId', groupId)
       }
       
-      const response = await axiosInstance.get<ExpenseSummary>(`/expense/monthly-summary?${params.toString()}`)
+      const response = await axiosInstance.get<ExpenseSummary>(`/expense/summary?${params.toString()}`)
       return response.data
     },
     enabled,
+  })
+}
+
+// Get monthly expense insights
+export const useMonthlyInsight = (
+  groupId: string,
+  year: string,
+  month: string,
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: ['monthlyInsight', groupId, year, month],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        groupId,
+        year,
+        month,
+      })
+      
+      const response = await axiosInstance.get<MonthlyInsight>(`/expense/monthly-insight?${params.toString()}`)
+      return response.data
+    },
+    enabled,
+  })
+}
+
+// Generate new monthly insight
+export const useGenerateNewInsight = () => {
+  return useMutation({
+    mutationFn: async ({ groupId, year, month }: { groupId: string; year: string; month: string }) => {
+      const params = new URLSearchParams({
+        groupId,
+        year,
+        month,
+        newInsight: 'true'
+      })
+      
+      const response = await axiosInstance.get<MonthlyInsight>(`/expense/monthly-insight?${params.toString()}`)
+      return response.data
+    }
   })
 }

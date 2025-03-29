@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Edit, UserPlus, Check, X, Plus } from 'lucide-react'
+import { Users, Edit, UserPlus, Check, X, Plus, DollarSign, Info } from 'lucide-react'
+import { AxiosError } from 'axios'
 import { 
   useGroupById, 
   useGroupUsers, 
@@ -9,12 +10,10 @@ import {
   useUserGroups,
   useCreateGroup,
   CreateGroupDto
-//   GroupUser
 } from '@/hooks/api/useGroup'
 import { useInviteUser, InviteUserDto } from '@/hooks/api/useInvitation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-// import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -29,16 +28,19 @@ import {
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useQueryClient } from '@tanstack/react-query'
+import { useGroupStore } from '@/stores/useGroupStore'
+import { useCategories } from '@/hooks/api/useCategory'
+import { useGetUserCategoryLimits, useSetUserCategoryLimit } from '@/hooks/api/useUserCategoryLimit'
+import { Switch } from '@/components/ui/switch'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
-interface GroupDetailsProps {
-  groupId?: string
-}
-
-export function GroupDetails({ groupId }: GroupDetailsProps) {
-  const { data: group, isLoading: isLoadingGroup } = useGroupById(groupId || '', !!groupId)
-  const { isLoading: isLoadingUsers } = useGroupUsers(groupId || '', !!groupId)
+export function GroupDetails() {
+  const { selectedGroup } = useGroupStore()
+  const selectedGroupId = selectedGroup?.id
+  const { data: group, isLoading: isLoadingGroup } = useGroupById(selectedGroupId || '', !!selectedGroupId)
+  const { isLoading: isLoadingUsers } = useGroupUsers(selectedGroupId || '', !!selectedGroupId)
   const { data: userGroups, refetch: refetchGroups } = useUserGroups()
-  const updateGroupNameMutation = useUpdateGroupName(groupId || '')
+  const updateGroupNameMutation = useUpdateGroupName(selectedGroupId || '')
   const inviteUserMutation = useInviteUser()
   const createGroupMutation = useCreateGroup()
   const queryClient = useQueryClient()
@@ -50,6 +52,14 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
   const [isEditingName, setIsEditingName] = useState(false)
   const [newGroupName, setNewGroupName] = useState('')
   const [newGroupType, setNewGroupType] = useState<'NORMAL' | 'BUSINESS'>('NORMAL')
+  const [isBudgetEnabled, setIsBudgetEnabled] = useState(false)
+  const [categoryBudgets, setCategoryBudgets] = useState<{ [key: string]: number }>({})
+  
+  // Hooks for both group and non-group budget settings
+  const { data: categories } = useCategories()
+  const { data: existingLimits } = useGetUserCategoryLimits(selectedGroupId)
+  const { data: defaultLimits } = useGetUserCategoryLimits()
+  const setUserCategoryLimit = useSetUserCategoryLimit()
 
   // Check if current user is admin
   const isAdmin = group?.role === 'admin'
@@ -60,8 +70,25 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
     }
   }, [group])
 
+  useEffect(() => {
+    if (existingLimits) {
+      const hasExistingLimits = existingLimits.length > 0
+      setIsBudgetEnabled(hasExistingLimits)
+      
+      if (hasExistingLimits) {
+        const budgets = existingLimits.reduce((acc, limit) => ({
+          ...acc,
+          [limit.categoryId]: limit.limit
+        }), {})
+        setCategoryBudgets(budgets)
+      } else {
+        setCategoryBudgets({})
+      }
+    }
+  }, [existingLimits])
+
   const handleInviteUser = async () => {
-    if (!inviteEmail.trim() || !groupId) {
+    if (!inviteEmail.trim() || !selectedGroupId) {
       toast({
         title: "Error",
         description: "Email is required",
@@ -73,7 +100,7 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
     try {
       const inviteData: InviteUserDto = {
         email: inviteEmail.trim(),
-        groupId: groupId
+        groupId: selectedGroupId
       }
 
       await inviteUserMutation.mutateAsync(inviteData)
@@ -95,7 +122,7 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
   }
 
   const handleUpdateGroupName = async () => {
-    if (!newGroupName.trim() || !groupId) {
+    if (!newGroupName.trim() || !selectedGroupId) {
       toast({
         title: "Error",
         description: "Group name cannot be empty",
@@ -115,7 +142,7 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
       setIsEditingName(false)
       
       // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+      queryClient.invalidateQueries({ queryKey: ['group', selectedGroupId] })
       queryClient.invalidateQueries({ queryKey: ['userGroups'] })
     } catch {
       toast({
@@ -166,7 +193,72 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
     }
   }
 
-  if (!groupId || groupId === "no-group") {
+  // Effect to handle budget state based on selected group
+  useEffect(() => {
+    const limits = selectedGroupId ? existingLimits : defaultLimits
+    if (limits) {
+      const hasLimits = limits.length > 0
+      setIsBudgetEnabled(hasLimits)
+      
+      if (hasLimits) {
+        const budgets = limits.reduce((acc, limit) => ({
+          ...acc,
+          [limit.categoryId]: limit.limit
+        }), {})
+        setCategoryBudgets(budgets)
+      } else {
+        setCategoryBudgets({})
+      }
+    }
+  }, [existingLimits, defaultLimits, selectedGroupId])
+
+  const handleBudgetToggle = (checked: boolean) => {
+    setIsBudgetEnabled(checked)
+    if (!checked) {
+      setCategoryBudgets({})
+    }
+  }
+
+  const handleBudgetChange = (categoryId: string, value: string) => {
+    const numValue = value === '' ? 0 : parseFloat(value)
+    setCategoryBudgets(prev => ({
+      ...prev,
+      [categoryId]: numValue
+    }))
+  }
+
+  const handleSaveBudgets = async () => {
+    try {
+      const promises = Object.entries(categoryBudgets).map(([categoryId, limit]) => {
+        return setUserCategoryLimit.mutateAsync({
+          categoryId,
+          limit,
+          groupId: selectedGroupId
+        })
+      })
+
+      await Promise.all(promises)
+
+      toast({
+        title: "Success",
+        description: selectedGroupId ? "Budget limits saved successfully" : "Default budget limits saved successfully",
+      })
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['userCategoryLimits'] })
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        console.error('Failed to save budget limits:', error.response?.data || error.message)
+      }
+      toast({
+        title: "Error",
+        description: "Failed to save budget limits",
+        variant: "destructive"
+      })
+    }
+  }
+
+  if (!selectedGroupId || selectedGroupId === "_none") {
     return (
       <Card>
         <CardHeader>
@@ -224,7 +316,7 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
             Select a group from the dropdown in the top bar to manage group or create a new one
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="space-y-4">
             <h3 className="text-sm font-medium">Your Groups</h3>
             <div className="space-y-1">
@@ -250,6 +342,66 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
               )}
             </div>
           </div>
+
+          {/* Default Budget Settings Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium">Default Budget Settings</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>You will be notified if you exceed your budget limit from any category altogether from all group spending.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={isBudgetEnabled}
+                  onCheckedChange={handleBudgetToggle}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {isBudgetEnabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
+
+            {isBudgetEnabled && categories && (
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {categories.map((category) => (
+                    <div key={category.id} className="flex items-center gap-4">
+                      <Label className="w-32">{category.name}</Label>
+                      <div className="flex-1">
+                        <div className="relative">
+                          <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            placeholder="Enter limit"
+                            className="pl-8"
+                            value={categoryBudgets[category.id] || ''}
+                            onChange={(e) => handleBudgetChange(category.id, e.target.value)}
+                            disabled={!isBudgetEnabled}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  onClick={handleSaveBudgets}
+                  disabled={setUserCategoryLimit.isPending || !isBudgetEnabled}
+                  className="w-full"
+                >
+                  {setUserCategoryLimit.isPending ? "Saving..." : "Save Default Budget Limits"}
+                </Button>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     )
@@ -266,6 +418,7 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
       </Card>
     )
   }
+
 
   if (!group) {
     return (
@@ -315,83 +468,119 @@ export function GroupDetails({ groupId }: GroupDetailsProps) {
           )}
         </div>
         <CardDescription>
-          {group.group.type === 'BUSINESS' ? 'Business Group' : 'Normal Group'} • Created on{' '}
+          {group.group.type === "BUSINESS" ? "Business Group" : "Normal Group"} &bull; Created on&#x20;
           {new Date(group.group.createdAt).toLocaleDateString()}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">Group Members</h3>
-            {isAdmin && (
-              <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button size="sm" variant="outline">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Invite User
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Invite User to Group</DialogTitle>
-                    <DialogDescription>
-                      Send an invitation to join {group.group.name}.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="email">Email Address</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="Enter email address"
-                      />
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Group Members</h3>
+              {isAdmin && (
+                <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Invite User
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Invite User to Group</DialogTitle>
+                      <DialogDescription>
+                        Send an invitation to join {group.group.name}.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={inviteEmail}
+                          onChange={(e) => setInviteEmail(e.target.value)}
+                          placeholder="Enter email address"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleInviteUser} disabled={inviteUserMutation.isPending}>
-                      {inviteUserMutation.isPending ? "Sending..." : "Send Invitation"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={handleInviteUser} disabled={inviteUserMutation.isPending}>
+                        {inviteUserMutation.isPending ? "Sending..." : "Send Invitation"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {/* Group users list implementation */}
+            </div>
           </div>
 
-          <div className="space-y-3">
-            {/* {groupUsers && groupUsers.length > 0 ? (
-              groupUsers.map((user: GroupUser) => (
-                <div key={user.userId} className="flex items-center justify-between p-2 rounded-md hover:bg-muted">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      {user.user?.picture ? (
-                        <AvatarImage src={user.user?.picture} alt={user.user?.name || 'User'} />
-                      ) : (
-                        <AvatarFallback>
-                          {user.user?.name ? user.user?.name.charAt(0).toUpperCase() : 'U'}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{user.user.name || 'Unnamed User'}</p>
-                      <p className="text-xs text-muted-foreground">{user.user.email}</p>
-                    </div>
-                  </div>
-                  <div className="text-xs font-medium capitalize">
-                    {user.role}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No members found in this group.
+          {/* Budget Settings Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-medium">Budget Settings</h3>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>You will receive notifications when expenses in {group.group.name} exceed the budget limits you set for each category.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
-            )} */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={isBudgetEnabled}
+                  onCheckedChange={handleBudgetToggle}
+                  disabled={!isAdmin}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {isBudgetEnabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+            </div>
+
+            {isBudgetEnabled && categories && (
+              <div className="space-y-4">
+                <div className="grid gap-4">
+                  {categories.map((category) => (
+                    <div key={category.id} className="flex items-center gap-4">
+                      <Label className="w-32">{category.name}</Label>
+                      <div className="flex-1">
+                        <div className="relative">
+                          <DollarSign className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            type="number"
+                            placeholder="Enter limit"
+                            className="pl-8"
+                            value={categoryBudgets[category.id] || ''}
+                            onChange={(e) => handleBudgetChange(category.id, e.target.value)}
+                            disabled={!isBudgetEnabled || !isAdmin}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  onClick={handleSaveBudgets}
+                  disabled={setUserCategoryLimit.isPending || !isBudgetEnabled || !isAdmin}
+                  className="w-full"
+                >
+                  {setUserCategoryLimit.isPending ? "Saving..." : "Save Budget Limits"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

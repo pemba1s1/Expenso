@@ -15,7 +15,6 @@ const upload = multer({ storage: storage });
  *   description: Expense management
  */
 
-
 /**
  * @swagger
  * /expense:
@@ -32,15 +31,21 @@ const upload = multer({ storage: storage });
  *             type: object
  *             properties:
  *               amount:
- *                 type: number
- *                 description: Provide the amount of the expense
- *               details:
- *                 type: object
- *                 description: Provide details of the expense
+ *                 type: string
+ *                 description: Amount of the expense
+ *               description:
+ *                 type: string
+ *                 description: Description of the expense
  *               groupId:
  *                 type: string
- *                 nullable: true
- *                 description: Provide the group ID if the expense is for a group
+ *                 description: Group ID for the expense
+ *               categoryName:
+ *                 type: string
+ *                 description: Name of the expense category
+ *               receiptImage:
+ *                 type: string
+ *                 format: binary
+ *                 description: Optional receipt image for the expense
  *     responses:
  *       201:
  *         description: Expense added successfully
@@ -59,34 +64,27 @@ const upload = multer({ storage: storage });
  *                   format: date-time
  *                 amount:
  *                   type: number
- *                 details:
- *                   type: object
- *                 userId:
+ *                 description:
  *                   type: string
- *                 receiptImage:
+ *                 categoryId:
  *                   type: string
  *                 status:
  *                   type: string
- *                   nullable: true
- *                 approvedBy:
- *                   type: string
- *                   nullable: true
- *                 groupId:
+ *                 receiptId:
  *                   type: string
  *                   nullable: true
  *       400:
- *         description: User ID is missing or no receipt image provided
+ *         description: Amount, description, group ID, and category name are required
  *       500:
  *         description: Internal server error
  */
 router.post('/', authenticateToken, upload.single('receiptImage'), addIndividualExpenseController);
 
-
 /**
  * @swagger
- * /expense:
+ * /expense/receipt:
  *   post:
- *     summary: Add a new expense
+ *     summary: Add expenses from a receipt image
  *     tags: [Expenses]
  *     security:
  *       - bearerAuth: []
@@ -100,45 +98,29 @@ router.post('/', authenticateToken, upload.single('receiptImage'), addIndividual
  *               receiptImage:
  *                 type: string
  *                 format: binary
+ *                 description: Receipt image to process
  *               groupId:
- *                 type: string 
- *                 nullable: true
- *                 description: Provide the group ID if the expense is for a group
+ *                 type: string
+ *                 description: Group ID for the expenses
  *     responses:
- *       201:
- *         description: Expense added successfully
+ *       200:
+ *         description: Receipt processed and expenses created successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 id:
+ *                 message:
  *                   type: string
- *                 createdAt:
- *                   type: string
- *                   format: date-time
- *                 updatedAt:
- *                   type: string
- *                   format: date-time
- *                 amount:
+ *                   example: Receipt and expenses created successfully
+ *                 expenseCount:
  *                   type: number
- *                 details:
- *                   type: object
- *                 userId:
+ *                   description: Number of expenses created from the receipt
+ *                 receiptId:
  *                   type: string
- *                 receiptImage:
- *                   type: string
- *                 status:
- *                   type: string
- *                   nullable: true
- *                 approvedBy:
- *                   type: string
- *                   nullable: true
- *                 groupId:
- *                   type: string
- *                   nullable: true
+ *                   description: ID of the created receipt
  *       400:
- *         description: User ID is missing or no receipt image provided
+ *         description: Group ID is missing or no receipt image provided
  *       500:
  *         description: Internal server error
  */
@@ -179,19 +161,13 @@ router.post('/receipt', authenticateToken, upload.single('receiptImage'), addExp
  *                   format: date-time
  *                 amount:
  *                   type: number
- *                 details:
- *                   type: object
- *                 userId:
+ *                 description:
  *                   type: string
- *                 receiptImage:
+ *                 categoryId:
  *                   type: string
  *                 status:
  *                   type: string
- *                   nullable: true
- *                 approvedBy:
- *                   type: string
- *                   nullable: true
- *                 groupId:
+ *                 receiptId:
  *                   type: string
  *                   nullable: true
  *       403:
@@ -211,19 +187,17 @@ router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseControlle
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: startDate
+ *         name: year
  *         schema:
  *           type: string
- *           format: date
  *         required: true
- *         description: Start date for the summary
+ *         description: Year for the summary (YYYY)
  *       - in: query
- *         name: endDate
+ *         name: month
  *         schema:
  *           type: string
- *           format: date
  *         required: true
- *         description: End date for the summary
+ *         description: Month for the summary (1-12)
  *       - in: query
  *         name: groupId
  *         schema:
@@ -250,12 +224,11 @@ router.post('/approve', authenticateToken, isGroupAdmin, approveExpenseControlle
  *                       amount:
  *                         type: number
  *       400:
- *         description: Start date and end date are required
+ *         description: Year and month are required
  *       500:
  *         description: Internal server error
  */
 router.get('/summary', authenticateToken, monthlyExpenseSummaryController);
-
 
 /**
  * @swagger
@@ -273,12 +246,22 @@ router.get('/summary', authenticateToken, monthlyExpenseSummaryController);
  *         required: true
  *         description: Group ID for the insights
  *       - in: query
- *         name: date
+ *         name: year
  *         schema:
  *           type: string
- *           format: date
  *         required: true
- *         description: Date (any day in the month) for which to get insights
+ *         description: Year for insights (YYYY)
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Month for insights (1-12)
+ *       - in: query
+ *         name: newInsight
+ *         schema:
+ *           type: boolean
+ *         description: Whether to generate a new insight or use cached one
  *     responses:
  *       200:
  *         description: Monthly insights retrieved successfully
@@ -302,7 +285,7 @@ router.get('/summary', authenticateToken, monthlyExpenseSummaryController);
  *                     type: string
  *                   description: Actionable tips for better financial management
  *       400:
- *         description: Group ID and date are required
+ *         description: Group ID, year, and month are required
  *       500:
  *         description: Internal server error
  */
@@ -323,6 +306,18 @@ router.get('/monthly-insight', authenticateToken, monthlyInsightController);
  *           type: string
  *           nullable: true
  *         description: Group ID to filter expenses
+ *       - in: query
+ *         name: year
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Year for filtering expenses (YYYY)
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: Month for filtering expenses (1-12)
  *     responses:
  *       200:
  *         description: Expenses retrieved successfully
@@ -351,7 +346,7 @@ router.get('/monthly-insight', authenticateToken, monthlyInsightController);
  *                     type: string
  *                     nullable: true
  *       400:
- *         description: User ID is missing
+ *         description: Year and month are required
  *       500:
  *         description: Internal server error
  */

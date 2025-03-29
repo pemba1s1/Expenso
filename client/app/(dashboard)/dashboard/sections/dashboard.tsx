@@ -1,11 +1,17 @@
 "use client"
 
-import { DollarSign, Plus, Upload, CreditCard, Download } from "lucide-react"
+import { DollarSign, Plus, Upload, CreditCard, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { BudgetTable } from "@/components/budget-table"
 import { BudgetChart } from "@/components/budget-chart"
+import { useGroupStore } from "@/stores/useGroupStore"
+import { useMonthStore } from "@/stores/useMonthStore"
+import { useMonthlyExpenseSummary, useAddExpenseFromReceipt } from "@/hooks/api/useExpense"
+import { useGetUserCategoryLimits } from "@/hooks/api/useUserCategoryLimit"
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 
 interface DashboardSectionProps {
   setShowExpenseForm: (show: boolean) => void
@@ -13,6 +19,21 @@ interface DashboardSectionProps {
 }
 
 export function DashboardSection({ setShowExpenseForm, setActiveSection }: DashboardSectionProps) {
+  const router = useRouter()
+  const { selectedGroup } = useGroupStore()
+  const addExpenseFromReceipt = useAddExpenseFromReceipt()
+  const { toast } = useToast()
+  const selectedMonth = useMonthStore((state) => state.selectedMonth)
+  const monthName = useMonthStore((state) => state.getMonthName())
+  const [year] = selectedMonth.split('-')
+
+  const { data: summary } = useMonthlyExpenseSummary(year, monthName, selectedGroup?.id)
+  const { data: categoryLimits } = useGetUserCategoryLimits(selectedGroup?.id)
+
+  const totalSpent = summary?.totalAmount || 0
+  const budgetedAmount = categoryLimits?.reduce((acc, limit) => acc + limit.limit, 0) || 0
+  const remainingBudget = budgetedAmount - totalSpent
+  const spentPercentage = budgetedAmount > 0 ? (totalSpent / budgetedAmount) * 100 : 0
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -22,8 +43,8 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$4,550.00</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <div className="text-2xl font-bold">${totalSpent.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Current Month Balance</p>
           </CardContent>
         </Card>
         <Card>
@@ -32,8 +53,26 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$3,200.00</div>
-            <p className="text-xs text-muted-foreground">For April 2025</p>
+            {budgetedAmount > 0 ? (
+              <>
+                <div className="text-2xl font-bold">${budgetedAmount.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Monthly Budget</p>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center text-yellow-600">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <span className="text-sm">No budgets set</span>
+                </div>
+                <Button 
+                  variant="link" 
+                  className="text-sm p-0 h-auto"
+                  onClick={() => router.push('/dashboard?section=groups')}
+                >
+                  Set category budgets
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -42,8 +81,8 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$2,450.00</div>
-            <p className="text-xs text-muted-foreground">76.5% of budget</p>
+            <div className="text-2xl font-bold">${totalSpent.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">{spentPercentage.toFixed(1)}% of budget</p>
           </CardContent>
         </Card>
         <Card>
@@ -52,10 +91,28 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$750.00</div>
-            <div className="mt-2">
-              <Progress value={76.5} className="h-2" />
-            </div>
+            {budgetedAmount > 0 ? (
+              <>
+                <div className="text-2xl font-bold">${remainingBudget.toFixed(2)}</div>
+                <div className="mt-2">
+                  <Progress value={spentPercentage} className="h-2" />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center text-yellow-600">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  <span className="text-sm">No budgets set</span>
+                </div>
+                <Button 
+                  variant="link" 
+                  className="text-sm p-0 h-auto"
+                  onClick={() => router.push('/dashboard?section=groups')}
+                >
+                  Set category budgets
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -66,15 +123,9 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
               <CardTitle>Budget Planning</CardTitle>
               <CardDescription>Manage your budget allocations</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Category
-              </Button>
-            </div>
           </CardHeader>
           <CardContent>
-            <BudgetTable />
+            <BudgetTable groupId={selectedGroup?.id} />
           </CardContent>
         </Card>
         <Card className="flex-1">
@@ -83,7 +134,7 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <CardDescription>How your budget is distributed</CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <BudgetChart />
+            <BudgetChart groupId={selectedGroup?.id} />
           </CardContent>
         </Card>
       </div>
@@ -93,21 +144,59 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-4">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="receipt-upload"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file && selectedGroup?.id) {
+                  addExpenseFromReceipt.mutate(
+                    { receiptImage: file, groupId: selectedGroup.id },
+                    {
+                      onSuccess: () => {
+                        setActiveSection("expenses")
+                        toast({
+                          title: "Receipt uploaded successfully",
+                          description: "Your receipt is being processed and expenses will be added shortly.",
+                        })
+                      },
+                      onError: (error) => {
+                        toast({
+                          title: "Failed to upload receipt",
+                          description: error.message,
+                          variant: "destructive",
+                        })
+                      },
+                    }
+                  )
+                } else if (!selectedGroup?.id) {
+                  toast({
+                    title: "Please select a group",
+                    description: "You need to select a group before uploading a receipt.",
+                    variant: "destructive",
+                  })
+                }
+                // Reset the input
+                e.target.value = ""
+              }}
+            />
             <Button onClick={() => setShowExpenseForm(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Expense
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => document.getElementById("receipt-upload")?.click()}
+              disabled={addExpenseFromReceipt.isPending}
+            >
               <Upload className="mr-2 h-4 w-4" />
-              Upload Receipt
+              {addExpenseFromReceipt.isPending ? "Uploading..." : "Upload Receipt"}
             </Button>
             <Button variant="outline" onClick={() => setActiveSection("expenses")}>
               <CreditCard className="mr-2 h-4 w-4" />
               View Transactions
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export Data
             </Button>
           </CardContent>
         </Card>
