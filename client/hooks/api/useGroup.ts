@@ -55,11 +55,11 @@ export const useUserGroups = (enabled = true) => {
   return useQuery({
     queryKey: ['userGroups'],
     queryFn: async () => {
-    console.log('useUserGroups')
       const response = await axiosInstance.get<Group[]>('/group/all')
       return response.data
     },
     enabled,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   })
 }
 
@@ -72,6 +72,7 @@ export const useGroupById = (groupId: string, enabled = true) => {
       return response.data
     },
     enabled: !!groupId && enabled,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   })
 }
 
@@ -84,6 +85,7 @@ export const useGroupUsers = (groupId: string, enabled = true) => {
       return response.data
     },
     enabled: !!groupId && enabled,
+    staleTime: 30000, // Consider data fresh for 30 seconds
   })
 }
 

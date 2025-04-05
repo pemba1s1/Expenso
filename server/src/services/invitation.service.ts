@@ -2,6 +2,8 @@ import { UserRole } from '@prisma/client';
 import prisma from '../config/prismaClient';
 import { logger } from '../utils/logger';
 import bcryptjs from 'bcryptjs';
+import { sendInviteEmail } from './email.service';
+import { config } from '../config/env';
 
 export const inviteUser = async (email: string, adminId: string, groupId: string) => {
   // Check if the user has the admin role
@@ -30,12 +32,12 @@ export const inviteUser = async (email: string, adminId: string, groupId: string
 
   let inviteLink;
 
-  if (user) inviteLink = `http://localhost:5000/invitation/accept/${invitation.id}`;
-  else inviteLink = `http://localhost:5000/invitation/accept/${invitation.id}?password=true`;  
+  if (user) inviteLink = `${config.CLIENT_URL}/invitation/accept/${invitation.id}`;
+  else inviteLink = `${config.CLIENT_URL}/invitation/accept/${invitation.id}?password=true`;  
   
   logger.info(`Invitation link: ${inviteLink}`);
   
-  // await sendInviteEmail(email, inviteLink);
+  await sendInviteEmail(email, inviteLink);
 
   return invitation;
 };

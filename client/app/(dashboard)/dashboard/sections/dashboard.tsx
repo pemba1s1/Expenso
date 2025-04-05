@@ -2,6 +2,7 @@
 
 import { DollarSign, Plus, Upload, CreditCard, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Section } from "@/stores/useDashboardStore"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { BudgetTable } from "@/components/budget-table"
@@ -11,15 +12,13 @@ import { useMonthStore } from "@/stores/useMonthStore"
 import { useMonthlyExpenseSummary, useAddExpenseFromReceipt } from "@/hooks/api/useExpense"
 import { useGetUserCategoryLimits } from "@/hooks/api/useUserCategoryLimit"
 import { useToast } from "@/hooks/use-toast"
-import { useRouter } from "next/navigation"
 
 interface DashboardSectionProps {
   setShowExpenseForm: (show: boolean) => void
-  setActiveSection: (section: string) => void
+  setActiveSection: (section: Section) => void
 }
 
 export function DashboardSection({ setShowExpenseForm, setActiveSection }: DashboardSectionProps) {
-  const router = useRouter()
   const { selectedGroup } = useGroupStore()
   const addExpenseFromReceipt = useAddExpenseFromReceipt()
   const { toast } = useToast()
@@ -67,7 +66,7 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
                 <Button 
                   variant="link" 
                   className="text-sm p-0 h-auto"
-                  onClick={() => router.push('/dashboard?section=groups')}
+                  onClick={() => setActiveSection('groups')}
                 >
                   Set category budgets
                 </Button>
@@ -107,7 +106,7 @@ export function DashboardSection({ setShowExpenseForm, setActiveSection }: Dashb
                 <Button 
                   variant="link" 
                   className="text-sm p-0 h-auto"
-                  onClick={() => router.push('/dashboard?section=groups')}
+                  onClick={() => setActiveSection('groups')}
                 >
                   Set category budgets
                 </Button>

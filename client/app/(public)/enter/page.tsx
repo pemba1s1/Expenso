@@ -8,13 +8,18 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useLogin, useRegister } from "@/hooks/use-auth"
+import { useAcceptInvitation } from "@/hooks/api/useInvitation"
 import { useSearchParams } from "next/navigation"
 
 // Component that uses useSearchParams wrapped in Suspense
 function AuthContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
-  const [activeTab, setActiveTab] = useState(tabParam === 'signup' ? 'signup' : 'login')
+  const invitationType = searchParams.get('type')
+  const invitationId = searchParams.get('invitationId')
+  const [activeTab, setActiveTab] = useState(
+    invitationType === 'register' || tabParam === 'signup' ? 'signup' : 'login'
+  )
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [name, setName] = useState("")
@@ -24,13 +29,16 @@ function AuthContent() {
   // React Query mutations
   const loginMutation = useLogin()
   const registerMutation = useRegister()
+  const acceptInvitation = useAcceptInvitation()
 
   // Update tab when URL param changes
   useEffect(() => {
     if (tabParam) {
       setActiveTab(tabParam === 'signup' ? 'signup' : 'login')
+    } else if (invitationType) {
+      setActiveTab(invitationType === 'register' ? 'signup' : 'login')
     }
-  }, [tabParam])
+  }, [tabParam, invitationType])
 
   const handleTabChange = (value: string) => {
     setEmail("")
@@ -60,18 +68,40 @@ function AuthContent() {
     }
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    loginMutation.mutate({ email, password });
+    try {
+      await loginMutation.mutateAsync({ email, password });
+      
+      // If this was an invitation flow, accept the invitation
+      if (invitationId) {
+        await acceptInvitation.mutateAsync({ invitationId });
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       setPasswordError("Passwords do not match")
       return;
     }
-    registerMutation.mutate({ name, email, password });
+    try {
+      await registerMutation.mutateAsync({ name, email, password });
+      
+      // If this was an invitation flow, accept the invitation with name
+      if (invitationId) {
+        await acceptInvitation.mutateAsync({ 
+          invitationId,
+          password,
+          name
+        });
+      }
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
   };
 
   return (
@@ -80,7 +110,12 @@ function AuthContent() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">{activeTab === 'login' ? "Login" : "Sign Up"}</CardTitle>
           <CardDescription className="text-center">
-            {activeTab === 'login' ? "Enter your credentials to access your account" : "Create an account to get started"}
+            {invitationId 
+              ? `${activeTab === 'login' ? "Login" : "Create an account"} to join the group`
+              : activeTab === 'login' 
+                ? "Enter your credentials to access your account" 
+                : "Create an account to get started"
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,9 +155,9 @@ function AuthContent() {
                 <Button 
                   type="submit" 
                   className="w-full" 
-                  disabled={loginMutation.isPending}
+                  disabled={loginMutation.isPending || acceptInvitation.isPending}
                 >
-                  {loginMutation.isPending ? "Logging in..." : "Login"}
+                  {loginMutation.isPending || acceptInvitation.isPending ? "Processing..." : "Login"}
                 </Button>
                 {loginMutation.error && (
                   <div className="p-3 rounded-md bg-red-50 border border-red-200 mt-2">
@@ -182,9 +217,9 @@ function AuthContent() {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={registerMutation.isPending}
+                  disabled={registerMutation.isPending || acceptInvitation.isPending}
                 >
-                  {registerMutation.isPending ? "Signing up..." : "Sign Up"}
+                  {registerMutation.isPending || acceptInvitation.isPending ? "Processing..." : "Sign Up"}
                 </Button>
                 {(passwordError || registerMutation.error) && (
                   <div className="p-3 rounded-md bg-red-50 border border-red-200 mt-2">

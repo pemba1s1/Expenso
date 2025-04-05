@@ -4,14 +4,14 @@ import { useState, useRef, useEffect } from 'react'
 import { LogOut, Settings } from 'lucide-react'
 import { useAuthContext } from '@/app/providers'
 import { useLogout } from '@/hooks/use-auth'
-import { useDashboard } from '@/hooks/use-dashboard'
+import { useDashboardStore } from '@/stores/useDashboardStore'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export function UserProfileSidebar() {
   const { user } = useAuthContext()
   const logout = useLogout()
-  const { setActiveSection } = useDashboard()
+  const { setActiveSection } = useDashboardStore()
   const [showPopup, setShowPopup] = useState(false)
   const popupRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)

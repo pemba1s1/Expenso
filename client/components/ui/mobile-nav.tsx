@@ -15,9 +15,11 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+import { Section } from "@/stores/useDashboardStore"
+
 interface MobileNavProps {
-  activeSection: string
-  setActiveSection: (section: string) => void
+  activeSection: Section
+  setActiveSection: (section: Section) => void
   className?: string
 }
 
@@ -111,7 +113,11 @@ export function MobileNav({
         className="hidden"
       />
       
-      <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+      <Tabs 
+        value={activeSection} 
+        onValueChange={(value) => setActiveSection(value as Section)} 
+        className="w-full"
+      >
         <TabsList className="grid grid-cols-5 w-full h-16 rounded-none bg-background relative">
           <TabsTrigger 
             value="dashboard" 

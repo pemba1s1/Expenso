@@ -3,10 +3,9 @@
 import { ReactNode } from "react"
 import { Home, CreditCard, BarChart, Users, Settings } from "lucide-react"
 import { format } from "date-fns"
-
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useMonthStore } from "@/stores/useMonthStore"
-import { useDashboard } from "@/hooks/use-dashboard"
+import { useDashboardStore } from "@/stores/useDashboardStore"
 import { useUserGroups } from "@/hooks/api/useGroup"
 import { useGroupStore } from "@/stores/useGroupStore"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -27,7 +26,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { activeSection, setActiveSection } = useDashboard()
+  const { activeSection, setActiveSection } = useDashboardStore()
   const isMobile = useIsMobile()
   const { data: groups } = useUserGroups()
   const { selectedGroup, setSelectedGroup } = useGroupStore()

@@ -9,6 +9,10 @@ export interface Invitation {
   email: string
   groupId: string
   status: string
+  group?: {
+    id: string
+    name: string
+  }
 }
 
 export interface InviteUserDto {
@@ -18,7 +22,8 @@ export interface InviteUserDto {
 
 export interface AcceptInvitationDto {
   invitationId: string
-  password: string
+  password?: string  // Optional for existing users
+  name?: string      // Required for new users
 }
 
 // Invite user to group
@@ -39,4 +44,9 @@ export const useAcceptInvitation = () => {
       return response.data
     },
   })
+}
+
+// Helper function to determine if it's a new user invitation
+export const isNewUserInvitation = (invitationLink: string): boolean => {
+  return invitationLink.includes('password=true')
 }
